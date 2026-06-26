@@ -20,6 +20,7 @@ export function Sidebar() {
   const toggleExpanded = useBuilderStore((s) => s.toggleExpanded);
   const mobileSidebarOpen = useBuilderStore((s) => s.mobileSidebarOpen);
   const setMobileSidebarOpen = useBuilderStore((s) => s.setMobileSidebarOpen);
+  const clearAll = useBuilderStore((s) => s.clearAll);
 
   const [exporting, setExporting] = useState(false);
 
@@ -191,6 +192,14 @@ export function Sidebar() {
           className="w-full rounded-md border-2 border-brand-500 py-2 text-sm font-bold text-brand-600 transition hover:bg-brand-500 hover:text-white disabled:opacity-40"
         >
           {exporting ? 'Exporting…' : platform === 'google' ? 'Export CSV' : 'Export Excel'}
+        </button>
+        <button
+          onClick={() => {
+            if (window.confirm('Clear all campaigns and ads? This cannot be undone.')) clearAll();
+          }}
+          className="mt-2 w-full text-xs font-medium text-ink-400 hover:text-red-500 hover:underline"
+        >
+          Clear all data
         </button>
       </div>
       </aside>

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { NETWORKS, LANGUAGES } from './constants';
 import type { FbCampaign, FbAd, GoogleAd, GoogleCampaign, Platform, SelectedView } from './types';
+
+const STORAGE_KEY = 'nmq-campaign-builder-store';
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -120,6 +123,10 @@ interface BuilderState {
   expanded: Record<string, boolean>;
   toggleExpanded: (id: string) => void;
 
+  /** Wipes all saved campaigns/ads and resets to a blank slate — also
+   *  clears the persisted copy in localStorage, not just in-memory state. */
+  clearAll: () => void;
+
   addGoogleCampaign: () => string;
   updateGoogleCampaign: (id: string, patch: Partial<GoogleCampaign>) => void;
   removeGoogleCampaign: (id: string) => void;
@@ -137,7 +144,9 @@ interface BuilderState {
   removeFbAd: (campaignId: string, adId: string) => void;
 }
 
-export const useBuilderStore = create<BuilderState>((set, get) => ({
+export const useBuilderStore = create<BuilderState>()(
+  persist(
+    (set, get) => ({
   platform: 'google',
   // Switching platforms always lands on a usable campaign form — the most
   // recent campaign for that platform, or a fresh blank one if none exist —
@@ -169,6 +178,16 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
   expanded: {},
   toggleExpanded: (id) => set((state) => ({ expanded: { ...state.expanded, [id]: !state.expanded[id] } })),
+
+  clearAll: () =>
+    set({
+      platform: 'google',
+      googleCampaigns: [],
+      fbCampaigns: [],
+      selected: { type: 'welcome' },
+      expanded: {},
+      mobileSidebarOpen: false,
+    }),
 
   addGoogleCampaign: () => {
     const c = newGoogleCampaign();
@@ -271,4 +290,19 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         c.id === campaignId ? { ...c, ads: c.ads.filter((a) => a.id !== adId) } : c,
       ),
     })),
-}));
+    }),
+    {
+      name: STORAGE_KEY,
+      // Persist the actual progress (campaigns/ads, which platform, which
+      // one was open) but not transient UI chrome like the mobile drawer's
+      // open/closed state — that should always start closed on load.
+      partialize: (state) => ({
+        platform: state.platform,
+        googleCampaigns: state.googleCampaigns,
+        fbCampaigns: state.fbCampaigns,
+        selected: state.selected,
+        expanded: state.expanded,
+      }),
+    },
+  ),
+);
