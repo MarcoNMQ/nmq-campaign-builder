@@ -110,6 +110,11 @@ interface BuilderState {
   selected: SelectedView;
   setSelected: (s: SelectedView) => void;
 
+  // Sidebar is a fixed-width panel that's fine on desktop but eats most of
+  // a phone screen — on mobile it's a togglable overlay drawer instead.
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
+
   expanded: Record<string, boolean>;
   toggleExpanded: (id: string) => void;
 
@@ -139,21 +144,26 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     set((state) => {
       if (p === 'google') {
         const last = state.googleCampaigns[state.googleCampaigns.length - 1];
-        if (last) return { platform: p, selected: { type: 'campaign', campaignId: last.id } };
+        if (last) return { platform: p, selected: { type: 'campaign', campaignId: last.id }, mobileSidebarOpen: false };
         const c = newGoogleCampaign();
-        return { platform: p, googleCampaigns: [...state.googleCampaigns, c], selected: { type: 'campaign', campaignId: c.id } };
+        return { platform: p, googleCampaigns: [...state.googleCampaigns, c], selected: { type: 'campaign', campaignId: c.id }, mobileSidebarOpen: false };
       }
       const last = state.fbCampaigns[state.fbCampaigns.length - 1];
-      if (last) return { platform: p, selected: { type: 'campaign', campaignId: last.id } };
+      if (last) return { platform: p, selected: { type: 'campaign', campaignId: last.id }, mobileSidebarOpen: false };
       const c = newFbCampaign();
-      return { platform: p, fbCampaigns: [...state.fbCampaigns, c], selected: { type: 'campaign', campaignId: c.id } };
+      return { platform: p, fbCampaigns: [...state.fbCampaigns, c], selected: { type: 'campaign', campaignId: c.id }, mobileSidebarOpen: false };
     }),
 
   googleCampaigns: [],
   fbCampaigns: [],
 
   selected: { type: 'welcome' },
-  setSelected: (s) => set({ selected: s }),
+  // Selecting something on mobile means the user found what they wanted in
+  // the drawer — auto-close it so the form is actually visible.
+  setSelected: (s) => set({ selected: s, mobileSidebarOpen: false }),
+
+  mobileSidebarOpen: false,
+  setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 
   expanded: {},
   toggleExpanded: (id) => set((state) => ({ expanded: { ...state.expanded, [id]: !state.expanded[id] } })),

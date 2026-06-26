@@ -18,6 +18,8 @@ export function Sidebar() {
   const setSelected = useBuilderStore((s) => s.setSelected);
   const expanded = useBuilderStore((s) => s.expanded);
   const toggleExpanded = useBuilderStore((s) => s.toggleExpanded);
+  const mobileSidebarOpen = useBuilderStore((s) => s.mobileSidebarOpen);
+  const setMobileSidebarOpen = useBuilderStore((s) => s.setMobileSidebarOpen);
 
   const [exporting, setExporting] = useState(false);
 
@@ -52,9 +54,29 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-80 flex-col bg-white border-r border-ink-100">
+    <>
+      {/* Backdrop — mobile only, tap to dismiss the drawer */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-80 max-w-[85vw] flex-col bg-white border-r border-ink-100 transition-transform duration-200 md:relative md:translate-x-0 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
       <div className="border-b border-ink-100 p-4">
-        <div className="mb-3 text-base font-extrabold tracking-tight text-ink-900">NMQ Campaign Builder</div>
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-base font-extrabold tracking-tight text-ink-900">NMQ Campaign Builder</span>
+          <button
+            className="rounded-md p-1 text-ink-400 hover:bg-ink-50 md:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
+        </div>
         <div className="flex gap-2 text-sm font-bold">
           <button
             className={`flex-1 rounded-full py-1.5 transition ${platform === 'google' ? 'bg-mint-500 text-white' : 'border border-ink-200 text-ink-500 hover:bg-ink-50'}`}
@@ -171,6 +193,7 @@ export function Sidebar() {
           {exporting ? 'Exporting…' : platform === 'google' ? 'Export CSV' : 'Export Excel'}
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
