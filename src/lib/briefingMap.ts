@@ -36,7 +36,7 @@ export function mapBriefingRowToGoogleCampaign(r: BriefingRow): Partial<GoogleCa
     market,
     country_group: countryGroup,
     countries,
-    location_level: 'adgroup',
+    location_level: 'campaign',
     month,
     budget: parseBriefingBudget(r.budget),
     start_date: parseBriefingDate(r.start_date),

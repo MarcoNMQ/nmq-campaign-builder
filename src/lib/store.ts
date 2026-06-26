@@ -38,7 +38,7 @@ export function newGoogleCampaign(): GoogleCampaign {
     key_category: 'NO',
     country_group: '',
     countries: [],
-    location_level: 'adgroup',
+    location_level: 'campaign',
     budget: 0,
     bid_strategy: '',
     networks: NETWORKS,
