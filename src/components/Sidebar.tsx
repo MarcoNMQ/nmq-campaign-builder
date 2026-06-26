@@ -33,26 +33,33 @@ export function Sidebar() {
   const totalAds = campaigns.reduce((n, c) => n + c.ads.length, 0);
   const totalBudget = campaigns.reduce((n, c) => n + (Number(c.budget) || 0), 0);
 
-  async function handleExport() {
+  async function downloadExport(exportType: 'campaigns' | 'keywords' | 'sitelinks', filename: string) {
     setExporting(true);
     try {
       const res = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, campaigns }),
+        body: JSON.stringify({ platform, campaigns, exportType }),
       });
       if (!res.ok) throw new Error(await res.text());
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = platform === 'google' ? 'google_ads_campaigns.csv' : 'facebook_campaigns.xlsx';
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
       setExporting(false);
     }
   }
+
+  function handleExport() {
+    return downloadExport('campaigns', platform === 'google' ? 'google_ads_campaigns.csv' : 'facebook_campaigns.xlsx');
+  }
+
+  const hasKeywords = platform === 'google' && googleCampaigns.some((c) => c.keywords.length > 0);
+  const hasSitelinks = platform === 'google' && googleCampaigns.some((c) => c.sitelinks.length > 0);
 
   return (
     <>
@@ -193,6 +200,24 @@ export function Sidebar() {
         >
           {exporting ? 'Exporting…' : platform === 'google' ? 'Export CSV' : 'Export Excel'}
         </button>
+        {hasKeywords && (
+          <button
+            disabled={exporting}
+            onClick={() => downloadExport('keywords', 'google_ads_keywords.csv')}
+            className="mt-2 w-full rounded-md border border-ink-200 py-1.5 text-xs font-semibold text-ink-600 transition hover:bg-ink-50 disabled:opacity-40"
+          >
+            Export Keywords CSV
+          </button>
+        )}
+        {hasSitelinks && (
+          <button
+            disabled={exporting}
+            onClick={() => downloadExport('sitelinks', 'google_ads_sitelinks.csv')}
+            className="mt-2 w-full rounded-md border border-ink-200 py-1.5 text-xs font-semibold text-ink-600 transition hover:bg-ink-50 disabled:opacity-40"
+          >
+            Export Sitelinks CSV
+          </button>
+        )}
         <button
           onClick={() => {
             if (window.confirm('Clear all campaigns and ads? This cannot be undone.')) clearAll();

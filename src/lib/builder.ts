@@ -91,12 +91,14 @@ function buildLocationRows(c: GoogleCampaign): CsvRow[] {
 }
 
 function buildAdRow(c: GoogleCampaign, ad: GoogleAd): CsvRow {
+  const isSearch = c.channel === 'Search';
   const row = emptyRow();
   row['Campaign'] = c.campaign_name;
   row['Ad Group'] = c.adset_name;
-  row['Ad type'] = 'Demand Gen video ad';
+  row['Ad type'] = isSearch ? 'Responsive search ad' : 'Demand Gen video ad';
   row['Ad Name'] = ad.ad_name ?? '';
-  row['Video ID 1'] = ad.video_id ?? '';
+  // Search ads have no video — leave Video ID blank, use Path 1/2 instead.
+  if (!isSearch) row['Video ID 1'] = ad.video_id ?? '';
   row['Headline 1'] = ad.headline_1 ?? '';
   row['Headline 2'] = ad.headline_2 ?? '';
   row['Headline 3'] = ad.headline_3 ?? '';
@@ -112,23 +114,35 @@ function buildAdRow(c: GoogleCampaign, ad: GoogleAd): CsvRow {
   row['Headline 13'] = ad.headline_13 ?? '';
   row['Headline 14'] = ad.headline_14 ?? '';
   row['Headline 15'] = ad.headline_15 ?? '';
-  row['Long headline 1'] = ad.long_headline_1 ?? '';
-  row['Long headline 2'] = ad.long_headline_2 ?? '';
-  row['Long headline 3'] = ad.long_headline_3 ?? '';
-  row['Long headline 4'] = ad.long_headline_4 ?? '';
-  row['Long headline 5'] = ad.long_headline_5 ?? '';
+  // Responsive Search Ads don't have Long Headlines at all — that's a
+  // Demand Gen/Discovery concept. Leave them blank for Search rows.
+  if (!isSearch) {
+    row['Long headline 1'] = ad.long_headline_1 ?? '';
+    row['Long headline 2'] = ad.long_headline_2 ?? '';
+    row['Long headline 3'] = ad.long_headline_3 ?? '';
+    row['Long headline 4'] = ad.long_headline_4 ?? '';
+    row['Long headline 5'] = ad.long_headline_5 ?? '';
+  }
   row['Description 1'] = ad.description_1 ?? '';
   row['Description 2'] = ad.description_2 ?? '';
   row['Description 3'] = ad.description_3 ?? '';
   row['Description 4'] = ad.description_4 ?? '';
-  row['Description 5'] = ad.description_5 ?? '';
-  row['Business name'] = BIZ;
-  row['Logo image'] = LOGO;
+  // Search Ads cap at 4 descriptions (Google's real RSA limit) — Description
+  // 5 stays blank for Search even if the field happens to hold leftover data.
+  if (!isSearch) row['Description 5'] = ad.description_5 ?? '';
+  if (!isSearch) {
+    row['Business name'] = BIZ;
+    row['Logo image'] = LOGO;
+  }
   // ad.cta and c.cta both default to '' (not undefined) in the store, so
   // `??` alone would never fall through — an empty string isn't nullish.
   // Ad-level CTA wins when actually set; otherwise fall back to the
   // campaign's Default CTA; otherwise fall back to CTAS[0] ('Learn more').
   row['Call to action'] = ad.cta?.trim() || c.cta?.trim() || CTAS[0];
+  if (isSearch) {
+    row['Path 1'] = ad.path1 ?? '';
+    row['Path 2'] = ad.path2 ?? '';
+  }
   row['Final URL'] = ad.final_url ?? '';
   row['Status'] = 'Enabled';
   return row;
@@ -185,6 +199,58 @@ export function buildCsv(campaigns: GoogleCampaign[]): string {
   return '﻿' + lines.join('\r\n') + '\r\n';
 }
 
+/**
+ * Keywords are a completely separate bulk-upload step in Google Ads Editor
+ * (a different screen, different columns) from the campaign/ad CSV above —
+ * so this is its own small CSV, not mixed into buildCsv(). Search-only;
+ * campaigns with no keywords contribute no rows. Column names confirmed
+ * against Google Ads Editor's own docs: Campaign, Ad Group, Keyword,
+ * Criterion Type (values Exact/Phrase/Broad).
+ */
+export function buildKeywordsCsv(campaigns: GoogleCampaign[]): string {
+  const resolved = resolveDuplicateNames(
+    campaigns.map((c) => ({ id: c.id, campaignName: c.campaign_name, adsetName: c.adset_name })),
+  );
+  const resolvedById = new Map(resolved.map((r) => [r.id, r]));
+
+  const headers = ['Campaign', 'Ad Group', 'Keyword', 'Criterion Type'];
+  const lines = [headers.join(',')];
+  for (const c of campaigns) {
+    const names = resolvedById.get(c.id);
+    const campaignName = names?.campaignName ?? c.campaign_name;
+    const adsetName = names?.adsetName ?? c.adset_name;
+    for (const kw of c.keywords ?? []) {
+      if (!kw.text.trim()) continue;
+      lines.push([campaignName, adsetName, kw.text, kw.matchType].map(csvEscape).join(','));
+    }
+  }
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+
+/**
+ * Sitelink extensions, also their own bulk-upload step in Editor. Campaign-
+ * level sitelinks (the common case here) leave the "Ad group" column blank
+ * — that's Editor's documented convention for campaign-wide assignment.
+ */
+export function buildSitelinksCsv(campaigns: GoogleCampaign[]): string {
+  const resolved = resolveDuplicateNames(
+    campaigns.map((c) => ({ id: c.id, campaignName: c.campaign_name, adsetName: c.adset_name })),
+  );
+  const resolvedById = new Map(resolved.map((r) => [r.id, r]));
+
+  const headers = ['Campaign', 'Ad group', 'Link text', 'Description line 1', 'Description line 2', 'Final URL'];
+  const lines = [headers.join(',')];
+  for (const c of campaigns) {
+    const names = resolvedById.get(c.id);
+    const campaignName = names?.campaignName ?? c.campaign_name;
+    for (const sl of c.sitelinks ?? []) {
+      if (!sl.linkText.trim()) continue;
+      lines.push([campaignName, '', sl.linkText, sl.description1, sl.description2, sl.finalUrl].map(csvEscape).join(','));
+    }
+  }
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+
 export function validateCampaigns(campaigns: GoogleCampaign[]): string[] {
   const errors: string[] = [];
   if (!campaigns || campaigns.length === 0) {
@@ -198,22 +264,38 @@ export function validateCampaigns(campaigns: GoogleCampaign[]): string[] {
     if (!c.countries || c.countries.length === 0) errors.push(`${label}: Select at least one country.`);
     if (!c.ads || c.ads.length === 0) errors.push(`${label}: Add at least one ad.`);
 
+    const isSearch = c.channel === 'Search';
+
     (c.ads ?? []).forEach((ad, j) => {
       const adLabel = `${label} › Ad ${j + 1}`;
+      const a = ad as unknown as Record<string, string>;
+      const headlineCount = isSearch ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].filter((k) => a[`headline_${k}`]).length : 0;
       for (let k = 1; k <= 15; k++) {
-        const h = (ad as unknown as Record<string, string>)[`headline_${k}`] ?? '';
+        const h = a[`headline_${k}`] ?? '';
         if (h && h.length > 30) errors.push(`${adLabel} › Headline ${k} is ${h.length} chars (max 30).`);
       }
-      for (let k = 1; k <= 5; k++) {
-        const lh = (ad as unknown as Record<string, string>)[`long_headline_${k}`] ?? '';
-        if (lh && lh.length > 90) errors.push(`${adLabel} › Long Headline ${k} is ${lh.length} chars (max 90).`);
-        const d = (ad as unknown as Record<string, string>)[`description_${k}`] ?? '';
+      // Search Ads (Responsive Search Ads) cap at 4 descriptions and have no
+      // Long Headlines at all — those checks only apply to Demand Gen ads.
+      const descLimit = isSearch ? 4 : 5;
+      for (let k = 1; k <= descLimit; k++) {
+        const d = a[`description_${k}`] ?? '';
         if (d && d.length > 90) errors.push(`${adLabel} › Description ${k} is ${d.length} chars (max 90).`);
       }
-      const hasLongHeadline = [1, 2, 3, 4, 5].some(
-        (k) => (ad as unknown as Record<string, string>)[`long_headline_${k}`],
-      );
-      if (!hasLongHeadline) errors.push(`${adLabel}: At least one Long Headline is required.`);
+      if (!isSearch) {
+        for (let k = 1; k <= 5; k++) {
+          const lh = a[`long_headline_${k}`] ?? '';
+          if (lh && lh.length > 90) errors.push(`${adLabel} › Long Headline ${k} is ${lh.length} chars (max 90).`);
+        }
+        const hasLongHeadline = [1, 2, 3, 4, 5].some((k) => a[`long_headline_${k}`]);
+        if (!hasLongHeadline) errors.push(`${adLabel}: At least one Long Headline is required.`);
+      } else {
+        // Google's real minimums for Responsive Search Ads.
+        if (headlineCount < 3) errors.push(`${adLabel}: Search ads need at least 3 headlines (has ${headlineCount}).`);
+        const descCount = [1, 2, 3, 4].filter((k) => a[`description_${k}`]).length;
+        if (descCount < 2) errors.push(`${adLabel}: Search ads need at least 2 descriptions (has ${descCount}).`);
+        if (a.path1 && a.path1.length > 15) errors.push(`${adLabel} › Path 1 is ${a.path1.length} chars (max 15).`);
+        if (a.path2 && a.path2.length > 15) errors.push(`${adLabel} › Path 2 is ${a.path2.length} chars (max 15).`);
+      }
     });
   });
 

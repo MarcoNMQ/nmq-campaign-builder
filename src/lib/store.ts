@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { NETWORKS, LANGUAGES } from './constants';
-import type { FbCampaign, FbAd, GoogleAd, GoogleCampaign, Platform, SelectedView } from './types';
+import type { FbCampaign, FbAd, GoogleAd, GoogleCampaign, GoogleKeyword, GoogleSitelink, Platform, SelectedView } from './types';
 
 const STORAGE_KEY = 'nmq-campaign-builder-store';
 
@@ -21,6 +21,8 @@ export function newGoogleAd(): GoogleAd {
     description_1: '', description_2: '', description_3: '', description_4: '', description_5: '',
     cta: '',
     final_url: '',
+    path1: '',
+    path2: '',
   };
 }
 
@@ -51,7 +53,17 @@ export function newGoogleCampaign(): GoogleCampaign {
     end_date: '',
     cta: '',
     ads: [],
+    keywords: [],
+    sitelinks: [],
   };
+}
+
+export function newGoogleKeyword(): GoogleKeyword {
+  return { id: uid(), text: '', matchType: 'Broad' };
+}
+
+export function newGoogleSitelink(): GoogleSitelink {
+  return { id: uid(), linkText: '', description1: '', description2: '', finalUrl: '' };
 }
 
 export function newFbAd(): FbAd {
@@ -134,6 +146,14 @@ interface BuilderState {
   addGoogleAd: (campaignId: string) => string;
   updateGoogleAd: (campaignId: string, adId: string, patch: Partial<GoogleAd>) => void;
   removeGoogleAd: (campaignId: string, adId: string) => void;
+
+  addGoogleKeyword: (campaignId: string) => string;
+  updateGoogleKeyword: (campaignId: string, keywordId: string, patch: Partial<GoogleKeyword>) => void;
+  removeGoogleKeyword: (campaignId: string, keywordId: string) => void;
+
+  addGoogleSitelink: (campaignId: string) => string;
+  updateGoogleSitelink: (campaignId: string, sitelinkId: string, patch: Partial<GoogleSitelink>) => void;
+  removeGoogleSitelink: (campaignId: string, sitelinkId: string) => void;
 
   addFbCampaign: () => string;
   updateFbCampaign: (id: string, patch: Partial<FbCampaign>) => void;
@@ -237,6 +257,54 @@ export const useBuilderStore = create<BuilderState>()(
     set((state) => ({
       googleCampaigns: state.googleCampaigns.map((c) =>
         c.id === campaignId ? { ...c, ads: c.ads.filter((a) => a.id !== adId) } : c,
+      ),
+    })),
+
+  addGoogleKeyword: (campaignId) => {
+    const kw = newGoogleKeyword();
+    set((state) => ({
+      googleCampaigns: state.googleCampaigns.map((c) =>
+        c.id === campaignId ? { ...c, keywords: [...c.keywords, kw] } : c,
+      ),
+    }));
+    return kw.id;
+  },
+  updateGoogleKeyword: (campaignId, keywordId, patch) =>
+    set((state) => ({
+      googleCampaigns: state.googleCampaigns.map((c) =>
+        c.id === campaignId
+          ? { ...c, keywords: c.keywords.map((k) => (k.id === keywordId ? { ...k, ...patch } : k)) }
+          : c,
+      ),
+    })),
+  removeGoogleKeyword: (campaignId, keywordId) =>
+    set((state) => ({
+      googleCampaigns: state.googleCampaigns.map((c) =>
+        c.id === campaignId ? { ...c, keywords: c.keywords.filter((k) => k.id !== keywordId) } : c,
+      ),
+    })),
+
+  addGoogleSitelink: (campaignId) => {
+    const sl = newGoogleSitelink();
+    set((state) => ({
+      googleCampaigns: state.googleCampaigns.map((c) =>
+        c.id === campaignId ? { ...c, sitelinks: [...c.sitelinks, sl] } : c,
+      ),
+    }));
+    return sl.id;
+  },
+  updateGoogleSitelink: (campaignId, sitelinkId, patch) =>
+    set((state) => ({
+      googleCampaigns: state.googleCampaigns.map((c) =>
+        c.id === campaignId
+          ? { ...c, sitelinks: c.sitelinks.map((s) => (s.id === sitelinkId ? { ...s, ...patch } : s)) }
+          : c,
+      ),
+    })),
+  removeGoogleSitelink: (campaignId, sitelinkId) =>
+    set((state) => ({
+      googleCampaigns: state.googleCampaigns.map((c) =>
+        c.id === campaignId ? { ...c, sitelinks: c.sitelinks.filter((s) => s.id !== sitelinkId) } : c,
       ),
     })),
 

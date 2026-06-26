@@ -19,6 +19,12 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
   const update = useBuilderStore((s) => s.updateGoogleCampaign);
   const removeCampaign = useBuilderStore((s) => s.removeGoogleCampaign);
   const setSelected = useBuilderStore((s) => s.setSelected);
+  const addGoogleKeyword = useBuilderStore((s) => s.addGoogleKeyword);
+  const updateGoogleKeyword = useBuilderStore((s) => s.updateGoogleKeyword);
+  const removeGoogleKeyword = useBuilderStore((s) => s.removeGoogleKeyword);
+  const addGoogleSitelink = useBuilderStore((s) => s.addGoogleSitelink);
+  const updateGoogleSitelink = useBuilderStore((s) => s.updateGoogleSitelink);
+  const removeGoogleSitelink = useBuilderStore((s) => s.removeGoogleSitelink);
 
   // Keep computed names in sync whenever the inputs that feed them change
   useEffect(() => {
@@ -57,6 +63,7 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
     ? clientTaxonomy.taxonomy[campaign.product_category]?.[campaign.product_subcategory] ?? []
     : [];
   const convention = getConventionForClient(campaign.client_profile);
+  const isSearch = campaign.channel === 'Search';
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -312,6 +319,98 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
           </Select>
         </Field>
       </div>
+
+      {isSearch && (
+        <div className="space-y-6 border-t border-ink-200 pt-6">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ink-600">Keywords</h3>
+              <button
+                type="button"
+                onClick={() => addGoogleKeyword(campaignId)}
+                className="text-xs font-semibold text-brand-600 hover:underline"
+              >
+                + Add keyword
+              </button>
+            </div>
+            <p className="mb-2 text-xs text-ink-400">Exported as a separate CSV — Editor imports keywords through its own bulk-upload step.</p>
+            {campaign.keywords.length === 0 && <p className="text-sm text-ink-400">No keywords yet.</p>}
+            <div className="space-y-2">
+              {campaign.keywords.map((kw) => (
+                <div key={kw.id} className="flex items-center gap-2">
+                  <TextInput
+                    value={kw.text}
+                    onChange={(e) => updateGoogleKeyword(campaignId, kw.id, { text: e.target.value })}
+                    placeholder="e.g. predator fishing rods"
+                    className="flex-1"
+                  />
+                  <Select
+                    value={kw.matchType}
+                    onChange={(e) => updateGoogleKeyword(campaignId, kw.id, { matchType: e.target.value as 'Broad' | 'Phrase' | 'Exact' })}
+                    className="w-32"
+                  >
+                    <option value="Broad">Broad</option>
+                    <option value="Phrase">Phrase</option>
+                    <option value="Exact">Exact</option>
+                  </Select>
+                  <button
+                    type="button"
+                    onClick={() => removeGoogleKeyword(campaignId, kw.id)}
+                    className="text-sm text-red-500 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ink-600">Sitelinks</h3>
+              <button
+                type="button"
+                onClick={() => addGoogleSitelink(campaignId)}
+                className="text-xs font-semibold text-brand-600 hover:underline"
+              >
+                + Add sitelink
+              </button>
+            </div>
+            <p className="mb-2 text-xs text-ink-400">Campaign-level sitelink extensions — also exported as a separate CSV.</p>
+            {campaign.sitelinks.length === 0 && <p className="text-sm text-ink-400">No sitelinks yet.</p>}
+            <div className="space-y-3">
+              {campaign.sitelinks.map((sl) => (
+                <div key={sl.id} className="rounded-md border border-ink-200 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink-500">Sitelink</span>
+                    <button
+                      type="button"
+                      onClick={() => removeGoogleSitelink(campaignId, sl.id)}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="Link text">
+                      <TextInput value={sl.linkText} onChange={(e) => updateGoogleSitelink(campaignId, sl.id, { linkText: e.target.value })} />
+                    </Field>
+                    <Field label="Final URL">
+                      <TextInput value={sl.finalUrl} onChange={(e) => updateGoogleSitelink(campaignId, sl.id, { finalUrl: e.target.value })} placeholder="https://example.com/..." />
+                    </Field>
+                    <Field label="Description line 1">
+                      <TextInput value={sl.description1} onChange={(e) => updateGoogleSitelink(campaignId, sl.id, { description1: e.target.value })} />
+                    </Field>
+                    <Field label="Description line 2">
+                      <TextInput value={sl.description2} onChange={(e) => updateGoogleSitelink(campaignId, sl.id, { description2: e.target.value })} />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end border-t border-ink-200 pt-4">
         <button

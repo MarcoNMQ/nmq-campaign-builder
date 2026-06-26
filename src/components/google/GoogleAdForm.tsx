@@ -17,6 +17,7 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
   if (!campaign || !ad) return null;
   const safeCampaign = campaign;
   const safeAd = ad;
+  const isSearch = campaign.channel === 'Search';
 
   function patch(p: Partial<GoogleAd>) {
     updateAd(campaignId, adId, p);
@@ -62,11 +63,17 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
         const key = `headline_${i + 1}` as keyof GoogleAd;
         (patchData as Record<string, string>)[key] = data.headlines?.[i] ?? (safeAd[key] as string);
       }
-      for (let i = 0; i < 5; i++) {
-        const lhKey = `long_headline_${i + 1}` as keyof GoogleAd;
+      // Search ads have no Long Headlines and cap at 4 descriptions.
+      const descCount = isSearch ? 4 : 5;
+      for (let i = 0; i < descCount; i++) {
         const dKey = `description_${i + 1}` as keyof GoogleAd;
-        (patchData as Record<string, string>)[lhKey] = data.longHeadlines?.[i] ?? (safeAd[lhKey] as string);
         (patchData as Record<string, string>)[dKey] = data.descriptions?.[i] ?? (safeAd[dKey] as string);
+      }
+      if (!isSearch) {
+        for (let i = 0; i < 5; i++) {
+          const lhKey = `long_headline_${i + 1}` as keyof GoogleAd;
+          (patchData as Record<string, string>)[lhKey] = data.longHeadlines?.[i] ?? (safeAd[lhKey] as string);
+        }
       }
       patch(patchData);
     } catch {
@@ -78,7 +85,7 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
 
   const headlineValues = Array.from({ length: 15 }, (_, i) => safeAd[`headline_${i + 1}` as keyof GoogleAd] as string);
   const longHeadlineValues = Array.from({ length: 5 }, (_, i) => safeAd[`long_headline_${i + 1}` as keyof GoogleAd] as string);
-  const descriptionValues = Array.from({ length: 5 }, (_, i) => safeAd[`description_${i + 1}` as keyof GoogleAd] as string);
+  const descriptionValues = Array.from({ length: isSearch ? 4 : 5 }, (_, i) => safeAd[`description_${i + 1}` as keyof GoogleAd] as string);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -96,25 +103,40 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
         <Field label="Ad name">
           <TextInput value={ad.ad_name} onChange={(e) => patch({ ad_name: e.target.value })} />
         </Field>
-        <Field
-          label="YouTube URL or Video ID"
-          hint={fetchingTitle ? 'Fetching title…' : undefined}
-          tooltip="Paste any YouTube link — the video ID is extracted automatically and the real video title is fetched for you."
-        >
-          <TextInput
-            defaultValue={ad.video_id}
-            onBlur={(e) => handleVideoUrlBlur(e.target.value)}
-            placeholder="https://youtube.com/watch?v=..."
-          />
-        </Field>
+        {!isSearch && (
+          <Field
+            label="YouTube URL or Video ID"
+            hint={fetchingTitle ? 'Fetching title…' : undefined}
+            tooltip="Paste any YouTube link — the video ID is extracted automatically and the real video title is fetched for you."
+          >
+            <TextInput
+              defaultValue={ad.video_id}
+              onBlur={(e) => handleVideoUrlBlur(e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
+            />
+          </Field>
+        )}
       </div>
 
       <Field label="Final URL">
         <TextInput value={ad.final_url} onChange={(e) => patch({ final_url: e.target.value })} placeholder="https://example.com/..." />
       </Field>
 
+      {isSearch && (
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Path 1" tooltip="Appears after your domain in the displayed URL, e.g. example.com/path1/path2. Optional, max 15 characters.">
+            <TextInput value={ad.path1 ?? ''} onChange={(e) => patch({ path1: e.target.value })} maxLength={15} placeholder="e.g. predator" />
+          </Field>
+          <Field label="Path 2">
+            <TextInput value={ad.path2 ?? ''} onChange={(e) => patch({ path2: e.target.value })} maxLength={15} placeholder="e.g. rods" />
+          </Field>
+        </div>
+      )}
+
       <div className="flex items-center justify-between rounded-md bg-ink-50 px-3 py-2">
-        <span className="text-sm text-ink-500">Generate copy from video title + product info</span>
+        <span className="text-sm text-ink-500">
+          {isSearch ? 'Generate copy from ad name + product info' : 'Generate copy from video title + product info'}
+        </span>
         <button
           onClick={handleGenerateCopy}
           disabled={generating || !ad.ad_name}
@@ -128,21 +150,23 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
       <CopyGroup
         title="Headlines"
         max={30}
-        note="Max 30 characters each. Up to 15."
+        note={isSearch ? 'Max 30 characters each. Up to 15. Search ads need at least 3.' : 'Max 30 characters each. Up to 15.'}
         values={headlineValues}
         onChange={(i, v) => patch({ [`headline_${i + 1}`]: v } as Partial<GoogleAd>)}
       />
-      <CopyGroup
-        title="Long headlines"
-        max={90}
-        note="Max 90 characters each. At least one is required to pass validation."
-        values={longHeadlineValues}
-        onChange={(i, v) => patch({ [`long_headline_${i + 1}`]: v } as Partial<GoogleAd>)}
-      />
+      {!isSearch && (
+        <CopyGroup
+          title="Long headlines"
+          max={90}
+          note="Max 90 characters each. At least one is required to pass validation."
+          values={longHeadlineValues}
+          onChange={(i, v) => patch({ [`long_headline_${i + 1}`]: v } as Partial<GoogleAd>)}
+        />
+      )}
       <CopyGroup
         title="Descriptions"
         max={90}
-        note="Max 90 characters each."
+        note={isSearch ? 'Max 90 characters each. Up to 4. Search ads need at least 2.' : 'Max 90 characters each.'}
         values={descriptionValues}
         onChange={(i, v) => patch({ [`description_${i + 1}`]: v } as Partial<GoogleAd>)}
       />

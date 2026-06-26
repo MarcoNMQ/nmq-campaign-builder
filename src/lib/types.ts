@@ -33,6 +33,29 @@ export interface GoogleAd {
   description_5: string;
   cta?: string;
   final_url: string;
+  // Search-ad-only (Channel = "Search"): the path segments appended after
+  // the domain in the displayed URL, e.g. example.com/path1/path2. Unused
+  // and left blank for Demand Gen/YouTube ads.
+  path1?: string;
+  path2?: string;
+}
+
+// Search-only. Google Ads Editor's CSV column for match type is literally
+// "Criterion Type" with values Exact/Phrase/Broad — see builder.ts.
+export interface GoogleKeyword {
+  id: string;
+  text: string;
+  matchType: 'Broad' | 'Phrase' | 'Exact';
+}
+
+// Search-only sitelink extension. Campaign-level (the common case) leaves
+// the exported "Ad group" column blank — see builder.ts.
+export interface GoogleSitelink {
+  id: string;
+  linkText: string;
+  description1: string;
+  description2: string;
+  finalUrl: string;
 }
 
 export interface GoogleCampaign {
@@ -68,6 +91,10 @@ export interface GoogleCampaign {
   target_cpm?: number;
   cta?: string;
   ads: GoogleAd[];
+  // Search-only — see GoogleKeyword/GoogleSitelink above. Empty arrays for
+  // any other channel, simply unused.
+  keywords: GoogleKeyword[];
+  sitelinks: GoogleSitelink[];
 }
 
 // Types for the Facebook/Instagram campaign shape.

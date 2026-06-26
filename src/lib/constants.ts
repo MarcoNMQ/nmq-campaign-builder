@@ -60,7 +60,7 @@ export const CSV_HEADERS = [
   'Headline 11', 'Headline 12', 'Headline 13', 'Headline 14', 'Headline 15',
   'Long headline 1', 'Long headline 2', 'Long headline 3', 'Long headline 4', 'Long headline 5',
   'Description 1', 'Description 2', 'Description 3', 'Description 4', 'Description 5',
-  'Business name', 'Logo image', 'Call to action', 'Final URL', 'Status',
+  'Business name', 'Logo image', 'Call to action', 'Path 1', 'Path 2', 'Final URL', 'Status',
 ] as const;
 
 // ── Dropdown options ───────────────────────────────────────────────────────────

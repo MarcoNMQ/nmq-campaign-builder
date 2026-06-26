@@ -1,12 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildCsv } from '@/lib/builder';
+import { buildCsv, buildKeywordsCsv, buildSitelinksCsv } from '@/lib/builder';
 import { buildFbExcel } from '@/lib/fbBuilder';
 import type { FbCampaign, GoogleCampaign } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
-  const { platform, campaigns } = await req.json();
+  const { platform, campaigns, exportType } = await req.json();
 
   if (platform === 'google') {
+    if (exportType === 'keywords') {
+      const csv = buildKeywordsCsv(campaigns as GoogleCampaign[]);
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="google_ads_keywords.csv"',
+        },
+      });
+    }
+    if (exportType === 'sitelinks') {
+      const csv = buildSitelinksCsv(campaigns as GoogleCampaign[]);
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="google_ads_sitelinks.csv"',
+        },
+      });
+    }
     const csv = buildCsv(campaigns as GoogleCampaign[]);
     return new NextResponse(csv, {
       headers: {
