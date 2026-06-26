@@ -11,7 +11,7 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: "NMQ Campaign Builder",
-  description: "Build Google and Facebook campaigns for Shimano Fishing.",
+  description: "From brief to bulk upload, fast.",
 };
 
 export default function RootLayout({
