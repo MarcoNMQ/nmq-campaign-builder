@@ -3,7 +3,7 @@
 import {
   CSV_HEADERS, NETWORKS, EU_POL, BIZ, LOGO,
   CAMP_TYPE, LANGUAGES, BUDGET_TYPE, CAMP_STATUS,
-  COUNTRY_MAP, MONTH_CODES,
+  COUNTRY_MAP, MONTH_CODES, CTAS,
 } from './constants';
 import { generateName } from './naming/generateName';
 import { getConventionForClient } from './naming/templates';
@@ -124,7 +124,11 @@ function buildAdRow(c: GoogleCampaign, ad: GoogleAd): CsvRow {
   row['Description 5'] = ad.description_5 ?? '';
   row['Business name'] = BIZ;
   row['Logo image'] = LOGO;
-  row['Call to action'] = ad.cta ?? c.cta ?? '';
+  // ad.cta and c.cta both default to '' (not undefined) in the store, so
+  // `??` alone would never fall through — an empty string isn't nullish.
+  // Ad-level CTA wins when actually set; otherwise fall back to the
+  // campaign's Default CTA; otherwise fall back to CTAS[0] ('Learn more').
+  row['Call to action'] = ad.cta?.trim() || c.cta?.trim() || CTAS[0];
   row['Final URL'] = ad.final_url ?? '';
   row['Status'] = 'Enabled';
   return row;
