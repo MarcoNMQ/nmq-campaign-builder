@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useBuilderStore } from '@/lib/store';
 import { generateAdsetName, generateCampaignName } from '@/lib/builder';
 import {
-  CHANNELS, MAIN_GOALS, PERF_GOALS, PRODUCT_CATEGORIES, PRODUCT_TAXONOMY,
+  CHANNELS, MAIN_GOALS, PERF_GOALS,
   MARKETS, MONTHS, CTAS, BID_STRATEGIES, COUNTRY_OPTIONS, MARKET_TO_GROUP,
   COUNTRY_GROUP_PRESETS, COUNTRY_GROUPS, NETWORK_OPTIONS, LANGUAGE_OPTIONS,
   COUNTRY_LANGUAGE_MAP,
@@ -47,11 +47,6 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
     patch({ market, country_group: group, countries });
   }
 
-  const families = campaign.product_category ? Object.keys(PRODUCT_TAXONOMY[campaign.product_category] ?? {}) : [];
-  const products = campaign.product_subcategory
-    ? PRODUCT_TAXONOMY[campaign.product_category]?.[campaign.product_subcategory] ?? []
-    : [];
-
   const isBlank = !campaign.market && !campaign.product_category && campaign.budget === 0 && campaign.ads.length === 0;
 
   return (
@@ -80,19 +75,19 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Channel">
+        <Field label="Channel" tooltip="Feeds the first segment of the auto-generated campaign name (e.g. YT for YouTube).">
           <Select value={campaign.channel} onChange={(e) => patch({ channel: e.target.value })}>
             <option value="">—</option>
             {CHANNELS.map((c) => <option key={c}>{c}</option>)}
           </Select>
         </Field>
-        <Field label="Main goal">
+        <Field label="Main goal" tooltip="The high-level campaign objective. Also feeds the campaign name.">
           <Select value={campaign.main_goal} onChange={(e) => patch({ main_goal: e.target.value })}>
             <option value="">—</option>
             {MAIN_GOALS.map((g) => <option key={g}>{g}</option>)}
           </Select>
         </Field>
-        <Field label="Performance goal">
+        <Field label="Performance goal" tooltip="The specific metric this ad group optimizes for (e.g. Demand Gen, Video Views). Feeds the ad group name.">
           <Select value={campaign.perf_goal} onChange={(e) => patch({ perf_goal: e.target.value })}>
             <option value="">—</option>
             {PERF_GOALS.map((g) => <option key={g}>{g}</option>)}
@@ -107,39 +102,19 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <Field label="Product category">
-          <Select
-            value={campaign.product_category}
-            onChange={(e) => patch({ product_category: e.target.value, product_subcategory: '', product_promoted: '' })}
-          >
-            <option value="">—</option>
-            {PRODUCT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-          </Select>
+        <Field label="Product category" tooltip="Free text — your own product taxonomy. Feeds the auto-generated campaign and ad group names.">
+          <TextInput value={campaign.product_category} onChange={(e) => patch({ product_category: e.target.value })} placeholder="e.g. Running shoes" />
         </Field>
         <Field label="Product family">
-          <Select
-            value={campaign.product_subcategory}
-            onChange={(e) => patch({ product_subcategory: e.target.value, product_promoted: '' })}
-            disabled={!families.length}
-          >
-            <option value="">—</option>
-            {families.map((f) => <option key={f}>{f}</option>)}
-          </Select>
+          <TextInput value={campaign.product_subcategory} onChange={(e) => patch({ product_subcategory: e.target.value })} placeholder="e.g. Trail" />
         </Field>
         <Field label="Product promoted">
-          <Select
-            value={campaign.product_promoted}
-            onChange={(e) => patch({ product_promoted: e.target.value })}
-            disabled={!products.length}
-          >
-            <option value="">—</option>
-            {products.map((p) => <option key={p}>{p}</option>)}
-          </Select>
+          <TextInput value={campaign.product_promoted} onChange={(e) => patch({ product_promoted: e.target.value })} placeholder="e.g. Trail Runner X2" />
         </Field>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <Field label="Market">
+        <Field label="Market" tooltip="Picking a market auto-fills Country group and Countries below to match — you can still adjust them after.">
           <Select value={campaign.market} onChange={(e) => onMarketChange(e.target.value)}>
             <option value="">—</option>
             {MARKETS.map((m) => <option key={m}>{m}</option>)}
@@ -154,7 +129,7 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
             {COUNTRY_GROUPS.map((g) => <option key={g}>{g}</option>)}
           </Select>
         </Field>
-        <Field label="Key category">
+        <Field label="Key category" tooltip="Marks this as a flagship/priority product. Adds 'KC' to the campaign name when set to Yes.">
           <Select value={campaign.key_category} onChange={(e) => patch({ key_category: e.target.value as 'YES' | 'NO' })}>
             <option value="NO">No</option>
             <option value="YES">Yes</option>
@@ -207,7 +182,7 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
 
       <h3 className="text-sm font-semibold text-ink-600">Editor settings</h3>
 
-      <Field label="Networks">
+      <Field label="Networks" tooltip="Which Google Ads networks the campaign can serve on. These are the only values Editor's bulk import accepts for Demand Gen campaigns.">
         <MultiToggle
           options={NETWORK_OPTIONS}
           values={campaign.networks ? campaign.networks.split(';').filter(Boolean) : []}
@@ -215,7 +190,11 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
         />
       </Field>
 
-      <Field label="Languages" hint="Pick 'All' or specific languages — use the shortcut to add languages for the countries selected above">
+      <Field
+        label="Languages"
+        hint="Pick 'All' or specific languages — use the shortcut to add languages for the countries selected above"
+        tooltip="Targets people based on their Google account/browser language, not their location. Usually matches the countries you're targeting."
+      >
         <MultiToggle
           options={LANGUAGE_OPTIONS}
           values={campaign.languages ? campaign.languages.split(',').map((s) => s.trim()).filter(Boolean) : []}

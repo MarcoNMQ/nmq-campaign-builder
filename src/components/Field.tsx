@@ -1,12 +1,33 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 
-export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+export function Field({ label, children, hint, tooltip }: { label: string; children: ReactNode; hint?: string; tooltip?: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
-      <span className="font-bold text-ink-900">{label}</span>
+    <div className="flex flex-col gap-1.5 text-sm">
+      <span className="flex items-center gap-1.5 font-bold text-ink-900">
+        <span>{label}</span>
+        {tooltip && (
+          <span className="relative inline-block">
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              onBlur={() => setOpen(false)}
+              className="flex h-4 w-4 items-center justify-center rounded-full bg-ink-100 text-[10px] font-bold text-ink-500 hover:bg-mint-100 hover:text-mint-600"
+              aria-label={`Help: ${label}`}
+            >
+              ?
+            </button>
+            {open && (
+              <span className="absolute left-1/2 top-5 z-20 w-56 -translate-x-1/2 rounded-md border border-ink-200 bg-white p-2 text-xs font-normal normal-case text-ink-700 shadow-lg">
+                {tooltip}
+              </span>
+            )}
+          </span>
+        )}
+      </span>
       {children}
       {hint && <span className="text-xs text-ink-400">{hint}</span>}
-    </label>
+    </div>
   );
 }
 

@@ -97,7 +97,11 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
         <Field label="Ad name">
           <TextInput value={ad.ad_name} onChange={(e) => patch({ ad_name: e.target.value })} />
         </Field>
-        <Field label="YouTube URL or Video ID" hint={fetchingTitle ? 'Fetching title…' : undefined}>
+        <Field
+          label="YouTube URL or Video ID"
+          hint={fetchingTitle ? 'Fetching title…' : undefined}
+          tooltip="Paste any YouTube link — the video ID is extracted automatically and the real video title is fetched for you."
+        >
           <TextInput
             defaultValue={ad.video_id}
             onBlur={(e) => handleVideoUrlBlur(e.target.value)}
@@ -125,18 +129,21 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
       <CopyGroup
         title="Headlines"
         max={30}
+        note="Max 30 characters each."
         values={[ad.headline_1, ad.headline_2, ad.headline_3, ad.headline_4, ad.headline_5]}
         onChange={(i, v) => patch({ [`headline_${i + 1}`]: v } as Partial<GoogleAd>)}
       />
       <CopyGroup
         title="Long headlines"
         max={90}
+        note="Max 90 characters each. At least one is required to pass validation."
         values={[ad.long_headline_1, ad.long_headline_2, ad.long_headline_3, ad.long_headline_4, ad.long_headline_5]}
         onChange={(i, v) => patch({ [`long_headline_${i + 1}`]: v } as Partial<GoogleAd>)}
       />
       <CopyGroup
         title="Descriptions"
         max={90}
+        note="Max 90 characters each."
         values={[ad.description_1, ad.description_2, ad.description_3, ad.description_4, ad.description_5]}
         onChange={(i, v) => patch({ [`description_${i + 1}`]: v } as Partial<GoogleAd>)}
       />
@@ -145,11 +152,12 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
 }
 
 function CopyGroup({
-  title, max, values, onChange,
-}: { title: string; max: number; values: string[]; onChange: (i: number, v: string) => void }) {
+  title, max, note, values, onChange,
+}: { title: string; max: number; note?: string; values: string[]; onChange: (i: number, v: string) => void }) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-ink-600">{title}</h3>
+      <h3 className="mb-1 text-sm font-semibold text-ink-600">{title}</h3>
+      {note && <p className="mb-2 text-xs text-ink-400">{note}</p>}
       <div className="grid grid-cols-5 gap-2">
         {values.map((v, i) => (
           <div key={i} className="flex flex-col gap-1">
