@@ -10,6 +10,42 @@ export const LANGUAGES = 'All';
 export const BUDGET_TYPE = 'Campaign total';
 export const CAMP_STATUS = 'Paused';
 
+// ── Networks (Editor's fixed set for Demand Gen campaigns) ────────────────────
+export const NETWORK_OPTIONS = ['Google search', 'Search Partners', 'Display Network', 'Video Partners'];
+
+// ── Languages — broad list of Google Ads supported languages relevant to Europe ─
+export const LANGUAGE_OPTIONS = [
+  'All', 'English', 'French', 'German', 'Dutch', 'Italian', 'Spanish', 'Portuguese',
+  'Polish', 'Swedish', 'Danish', 'Finnish', 'Norwegian', 'Czech', 'Slovak', 'Slovenian',
+  'Hungarian', 'Romanian', 'Croatian', 'Lithuanian', 'Latvian', 'Estonian', 'Greek',
+  'Bulgarian', 'Russian', 'Turkish', 'Ukrainian',
+];
+
+// ── Country → primary language(s), for quick "add languages for my selected countries" ─
+export const COUNTRY_LANGUAGE_MAP: Record<string, string[]> = {
+  UK: ['English'],
+  NL: ['Dutch'],
+  BE: ['Dutch', 'French'],
+  DE: ['German'],
+  FR: ['French'],
+  SE: ['Swedish'],
+  PL: ['Polish'],
+  IT: ['Italian'],
+  ES: ['Spanish'],
+  PT: ['Portuguese'],
+  HU: ['Hungarian'],
+  CZ: ['Czech'],
+  RO: ['Romanian'],
+  LIT: ['Lithuanian'],
+  SLOW: ['Slovak'],
+  SLOV: ['Slovenian'],
+  AUS: ['German'],
+  CRO: ['Croatian'],
+  NO: ['Norwegian'],
+  FI: ['Finnish'],
+  DK: ['Danish'],
+};
+
 // ── CSV headers (exact Editor column names) ───────────────────────────────────
 export const CSV_HEADERS = [
   'Campaign', 'Campaign Type', 'Networks', 'Budget', 'Budget type',

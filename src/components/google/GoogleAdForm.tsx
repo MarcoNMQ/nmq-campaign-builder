@@ -84,7 +84,7 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[#1F3864]">Ad</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight text-ink-900">Ad</h2>
         <button
           onClick={() => removeAd(campaignId, adId)}
           className="text-sm text-red-500 hover:underline"
@@ -110,12 +110,12 @@ export function GoogleAdForm({ campaignId, adId }: { campaignId: string; adId: s
         <TextInput value={ad.final_url} onChange={(e) => patch({ final_url: e.target.value })} placeholder="https://shimanofishing.com/..." />
       </Field>
 
-      <div className="flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2">
-        <span className="text-sm text-zinc-500">Generate copy from video title + product info</span>
+      <div className="flex items-center justify-between rounded-md bg-ink-50 px-3 py-2">
+        <span className="text-sm text-ink-500">Generate copy from video title + product info</span>
         <button
           onClick={handleGenerateCopy}
           disabled={generating || !ad.ad_name}
-          className="rounded-md bg-[#1F3864] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          className="rounded-md bg-brand-500 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
         >
           {generating ? 'Generating…' : '✨ Generate with AI'}
         </button>
@@ -149,7 +149,7 @@ function CopyGroup({
 }: { title: string; max: number; values: string[]; onChange: (i: number, v: string) => void }) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-zinc-600">{title}</h3>
+      <h3 className="mb-2 text-sm font-semibold text-ink-600">{title}</h3>
       <div className="grid grid-cols-5 gap-2">
         {values.map((v, i) => (
           <div key={i} className="flex flex-col gap-1">

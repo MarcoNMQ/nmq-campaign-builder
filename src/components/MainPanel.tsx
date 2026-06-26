@@ -17,7 +17,8 @@ export function MainPanel() {
   const addFbAd = useBuilderStore((s) => s.addFbAd);
 
   // Handle "new_campaign" / "new_ad" intents by creating the item then
-  // redirecting selection to it, so forms always edit a concrete id.
+  // redirecting selection to it, so forms always edit a concrete id and all
+  // fields are visible immediately — no extra "start" click needed.
   const handledRef = useRef<string | null>(null);
   useEffect(() => {
     const key = JSON.stringify(selected);
@@ -35,9 +36,9 @@ export function MainPanel() {
 
   if (selected.type === 'welcome' || selected.type === 'new_campaign') {
     return (
-      <div className="flex flex-1 items-center justify-center text-zinc-400">
+      <div className="flex flex-1 items-center justify-center text-ink-400">
         <div className="text-center">
-          <p className="text-lg font-medium text-zinc-500">No campaign selected</p>
+          <p className="text-lg font-medium text-ink-500">No campaign selected</p>
           <p className="text-sm">Click “+ New Campaign” in the sidebar to get started.</p>
         </div>
       </div>

@@ -8,34 +8,15 @@ import {
   FB_INSTAGRAM_POSITIONS, FB_STATUSES,
 } from '@/lib/fbConstants';
 import { COUNTRY_OPTIONS } from '@/lib/constants';
-import { Field, Select, TextInput } from '@/components/Field';
+import { Field, MultiToggle, Select, TextInput } from '@/components/Field';
+import { BriefingImportPanel } from '@/components/BriefingImportPanel';
 import type { FbCampaign } from '@/lib/types';
-
-function MultiToggle({
-  options, values, onChange,
-}: { options: string[]; values: string[]; onChange: (v: string[]) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => {
-        const active = values.includes(o);
-        return (
-          <button
-            key={o}
-            type="button"
-            onClick={() => onChange(active ? values.filter((v) => v !== o) : [...values, o])}
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${active ? 'bg-teal-500 text-white' : 'bg-zinc-100 text-zinc-500'}`}
-          >
-            {o}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 export function FbCampaignForm({ campaignId }: { campaignId: string }) {
   const campaign = useBuilderStore((s) => s.fbCampaigns.find((c) => c.id === campaignId));
   const update = useBuilderStore((s) => s.updateFbCampaign);
+  const removeCampaign = useBuilderStore((s) => s.removeFbCampaign);
+  const setSelected = useBuilderStore((s) => s.setSelected);
 
   if (!campaign) return null;
 
@@ -43,9 +24,24 @@ export function FbCampaignForm({ campaignId }: { campaignId: string }) {
     update(campaignId, p);
   }
 
+  const isBlank = !campaign.campaign_name && !campaign.campaign_objective && campaign.ads.length === 0;
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <h2 className="text-lg font-bold text-[#1F3864]">Campaign</h2>
+      <details className="rounded-md border border-ink-200">
+        <summary className="cursor-pointer px-4 py-2 text-sm font-semibold text-ink-600">📥 Import from Briefing Sheet</summary>
+        <div className="border-t border-ink-200 p-4">
+          <BriefingImportPanel
+            platform="facebook"
+            onDone={(lastCampaignId) => {
+              if (isBlank && lastCampaignId !== campaignId) removeCampaign(campaignId);
+              setSelected({ type: 'campaign', campaignId: lastCampaignId });
+            }}
+          />
+        </div>
+      </details>
+
+      <h2 className="text-2xl font-extrabold tracking-tight text-ink-900">Campaign</h2>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Campaign name">
@@ -96,7 +92,7 @@ export function FbCampaignForm({ campaignId }: { campaignId: string }) {
         </Field>
       </div>
 
-      <h3 className="text-sm font-semibold text-zinc-600">Ad set targeting</h3>
+      <h3 className="text-sm font-semibold text-ink-600">Ad set targeting</h3>
 
       <Field label="Countries">
         <MultiToggle
@@ -157,6 +153,16 @@ export function FbCampaignForm({ campaignId }: { campaignId: string }) {
         <Field label="Bid amount (€)">
           <TextInput type="number" min={0} step="0.01" value={campaign.bid_amount ?? ''} onChange={(e) => patch({ bid_amount: Number(e.target.value) })} />
         </Field>
+      </div>
+
+      <div className="flex justify-end border-t border-ink-200 pt-4">
+        <button
+          type="button"
+          className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          onClick={() => setSelected({ type: 'new_ad', campaignId })}
+        >
+          Next: Add ad →
+        </button>
       </div>
     </div>
   );

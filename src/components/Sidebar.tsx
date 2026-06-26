@@ -10,8 +10,6 @@ export function Sidebar() {
   const setPlatform = useBuilderStore((s) => s.setPlatform);
   const googleCampaigns = useBuilderStore((s) => s.googleCampaigns);
   const fbCampaigns = useBuilderStore((s) => s.fbCampaigns);
-  const addGoogleCampaign = useBuilderStore((s) => s.addGoogleCampaign);
-  const addFbCampaign = useBuilderStore((s) => s.addFbCampaign);
   const removeGoogleCampaign = useBuilderStore((s) => s.removeGoogleCampaign);
   const removeFbCampaign = useBuilderStore((s) => s.removeFbCampaign);
   const duplicateGoogleCampaign = useBuilderStore((s) => s.duplicateGoogleCampaign);
@@ -54,17 +52,18 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-80 flex-col border-r border-zinc-200 bg-white">
-      <div className="border-b border-zinc-200 p-3">
-        <div className="flex rounded-md bg-zinc-100 p-1 text-sm font-medium">
+    <aside className="flex h-screen w-80 flex-col bg-white border-r border-ink-100">
+      <div className="border-b border-ink-100 p-4">
+        <div className="mb-3 text-base font-extrabold tracking-tight text-ink-900">NMQ Campaign Builder</div>
+        <div className="flex gap-2 text-sm font-bold">
           <button
-            className={`flex-1 rounded-md py-1.5 transition ${platform === 'google' ? 'bg-white text-[#1F3864] shadow' : 'text-zinc-500'}`}
+            className={`flex-1 rounded-full py-1.5 transition ${platform === 'google' ? 'bg-mint-500 text-white' : 'border border-ink-200 text-ink-500 hover:bg-ink-50'}`}
             onClick={() => setPlatform('google')}
           >
             Google
           </button>
           <button
-            className={`flex-1 rounded-md py-1.5 transition ${platform === 'facebook' ? 'bg-white text-[#1F3864] shadow' : 'text-zinc-500'}`}
+            className={`flex-1 rounded-full py-1.5 transition ${platform === 'facebook' ? 'bg-mint-500 text-white' : 'border border-ink-200 text-ink-500 hover:bg-ink-50'}`}
             onClick={() => setPlatform('facebook')}
           >
             Facebook
@@ -74,7 +73,7 @@ export function Sidebar() {
 
       <div className="p-3">
         <button
-          className="w-full rounded-md bg-teal-500 py-2 text-sm font-semibold text-white transition hover:bg-teal-600"
+          className="w-full rounded-md bg-brand-500 py-2 text-sm font-bold text-white transition hover:bg-brand-600"
           onClick={() => setSelected({ type: 'new_campaign' })}
         >
           + New Campaign
@@ -83,7 +82,7 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto px-2">
         {campaigns.length === 0 && (
-          <p className="px-2 py-4 text-sm text-zinc-400">No campaigns yet.</p>
+          <p className="px-2 py-4 text-sm text-ink-400">No campaigns yet.</p>
         )}
         {campaigns.map((c) => {
           const isOpen = expanded[c.id] ?? true;
@@ -91,9 +90,9 @@ export function Sidebar() {
           return (
             <div key={c.id} className="mb-1">
               <div
-                className={`group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm ${isSelected ? 'bg-teal-50 text-[#1F3864]' : 'text-zinc-700 hover:bg-zinc-50'}`}
+                className={`group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm transition ${isSelected ? 'bg-mint-100 text-ink-900 font-semibold' : 'text-ink-700 hover:bg-ink-50'}`}
               >
-                <button onClick={() => toggleExpanded(c.id)} className="text-zinc-400">
+                <button onClick={() => toggleExpanded(c.id)} className="text-ink-400">
                   {isOpen ? '▾' : '▸'}
                 </button>
                 <button
@@ -119,9 +118,9 @@ export function Sidebar() {
                 </button>
               </div>
               {isOpen && (
-                <div className="ml-5 border-l border-zinc-200 pl-2">
+                <div className="ml-5 border-l-2 border-ink-100 pl-2">
                   <button
-                    className={`block w-full truncate rounded-md px-2 py-1 text-left text-xs ${selected.type === 'adgroup' && selected.campaignId === c.id ? 'bg-teal-50 text-[#1F3864]' : 'text-zinc-500 hover:bg-zinc-50'}`}
+                    className={`block w-full truncate rounded-md px-2 py-1 text-left text-xs transition ${selected.type === 'adgroup' && selected.campaignId === c.id ? 'bg-mint-100 text-ink-900 font-semibold' : 'text-ink-500 hover:bg-ink-50'}`}
                     onClick={() => setSelected({ type: 'adgroup', campaignId: c.id })}
                   >
                     {c.adset_name || '(ad group)'} · {c.ads.length} ad{c.ads.length === 1 ? '' : 's'}
@@ -129,14 +128,14 @@ export function Sidebar() {
                   {c.ads.map((ad) => (
                     <button
                       key={ad.id}
-                      className={`block w-full truncate rounded-md px-2 py-1 text-left text-xs ${selected.type === 'ad' && selected.adId === ad.id ? 'bg-teal-50 text-[#1F3864]' : 'text-zinc-400 hover:bg-zinc-50'}`}
+                      className={`block w-full truncate rounded-md px-2 py-1 text-left text-xs transition ${selected.type === 'ad' && selected.adId === ad.id ? 'bg-mint-100 text-ink-900 font-semibold' : 'text-ink-400 hover:bg-ink-50'}`}
                       onClick={() => setSelected({ type: 'ad', campaignId: c.id, adId: ad.id })}
                     >
                       {('ad_name' in ad && ad.ad_name) || '(unnamed ad)'}
                     </button>
                   ))}
                   <button
-                    className="block w-full truncate rounded-md px-2 py-1 text-left text-xs text-teal-600 hover:bg-zinc-50"
+                    className="block w-full truncate rounded-md px-2 py-1 text-left text-xs font-bold text-brand-600 hover:bg-ink-50"
                     onClick={() => setSelected({ type: 'new_ad', campaignId: c.id })}
                   >
                     + Add ad
@@ -148,13 +147,13 @@ export function Sidebar() {
         })}
       </div>
 
-      <div className="border-t border-zinc-200 p-3 text-xs text-zinc-500">
+      <div className="border-t border-ink-100 p-3 text-xs font-medium text-ink-500">
         {campaigns.length} campaign{campaigns.length === 1 ? '' : 's'} · {totalAds} ad{totalAds === 1 ? '' : 's'} · €{totalBudget.toFixed(2)} budget
       </div>
 
       {errors.length > 0 && (
-        <details className="border-t border-zinc-200 px-3 py-2 text-xs text-red-600">
-          <summary className="cursor-pointer font-medium">{errors.length} validation issue{errors.length === 1 ? '' : 's'}</summary>
+        <details className="border-t border-ink-100 px-3 py-2 text-xs text-red-600">
+          <summary className="cursor-pointer font-semibold">{errors.length} validation issue{errors.length === 1 ? '' : 's'}</summary>
           <ul className="mt-1 list-disc pl-4">
             {errors.map((e, i) => (
               <li key={i}>{e}</li>
@@ -163,11 +162,11 @@ export function Sidebar() {
         </details>
       )}
 
-      <div className="border-t border-zinc-200 p-3">
+      <div className="border-t border-ink-100 p-3">
         <button
           disabled={exporting || campaigns.length === 0}
           onClick={handleExport}
-          className="w-full rounded-md bg-zinc-900 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:opacity-40"
+          className="w-full rounded-md border-2 border-brand-500 py-2 text-sm font-bold text-brand-600 transition hover:bg-brand-500 hover:text-white disabled:opacity-40"
         >
           {exporting ? 'Exporting…' : platform === 'google' ? 'Export CSV' : 'Export Excel'}
         </button>

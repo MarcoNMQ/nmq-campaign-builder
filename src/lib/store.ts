@@ -24,9 +24,9 @@ export function newGoogleCampaign(): GoogleCampaign {
     id: uid(),
     campaign_name: '',
     adset_name: '',
-    channel: 'YouTube',
-    main_goal: 'Awareness',
-    perf_goal: 'Demand Gen',
+    channel: '',
+    main_goal: '',
+    perf_goal: '',
     month: '',
     product_category: '',
     product_subcategory: '',
@@ -131,7 +131,22 @@ interface BuilderState {
 
 export const useBuilderStore = create<BuilderState>((set, get) => ({
   platform: 'google',
-  setPlatform: (p) => set({ platform: p, selected: { type: 'welcome' } }),
+  // Switching platforms always lands on a usable campaign form — the most
+  // recent campaign for that platform, or a fresh blank one if none exist —
+  // so all fields are visible without an extra "+ New Campaign" click.
+  setPlatform: (p) =>
+    set((state) => {
+      if (p === 'google') {
+        const last = state.googleCampaigns[state.googleCampaigns.length - 1];
+        if (last) return { platform: p, selected: { type: 'campaign', campaignId: last.id } };
+        const c = newGoogleCampaign();
+        return { platform: p, googleCampaigns: [...state.googleCampaigns, c], selected: { type: 'campaign', campaignId: c.id } };
+      }
+      const last = state.fbCampaigns[state.fbCampaigns.length - 1];
+      if (last) return { platform: p, selected: { type: 'campaign', campaignId: last.id } };
+      const c = newFbCampaign();
+      return { platform: p, fbCampaigns: [...state.fbCampaigns, c], selected: { type: 'campaign', campaignId: c.id } };
+    }),
 
   googleCampaigns: [],
   fbCampaigns: [],

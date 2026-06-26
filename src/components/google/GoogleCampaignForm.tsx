@@ -6,14 +6,18 @@ import { generateAdsetName, generateCampaignName } from '@/lib/builder';
 import {
   CHANNELS, MAIN_GOALS, PERF_GOALS, PRODUCT_CATEGORIES, PRODUCT_TAXONOMY,
   MARKETS, MONTHS, CTAS, BID_STRATEGIES, COUNTRY_OPTIONS, MARKET_TO_GROUP,
-  COUNTRY_GROUP_PRESETS, COUNTRY_GROUPS,
+  COUNTRY_GROUP_PRESETS, COUNTRY_GROUPS, NETWORK_OPTIONS, LANGUAGE_OPTIONS,
+  COUNTRY_LANGUAGE_MAP,
 } from '@/lib/constants';
-import { Field, Select, TextInput } from '@/components/Field';
+import { Field, MultiToggle, Select, TextInput } from '@/components/Field';
+import { BriefingImportPanel } from '@/components/BriefingImportPanel';
 import type { GoogleCampaign } from '@/lib/types';
 
 export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
   const campaign = useBuilderStore((s) => s.googleCampaigns.find((c) => c.id === campaignId));
   const update = useBuilderStore((s) => s.updateGoogleCampaign);
+  const removeCampaign = useBuilderStore((s) => s.removeGoogleCampaign);
+  const setSelected = useBuilderStore((s) => s.setSelected);
 
   // Keep computed names in sync whenever the inputs that feed them change
   useEffect(() => {
@@ -48,31 +52,49 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
     ? PRODUCT_TAXONOMY[campaign.product_category]?.[campaign.product_subcategory] ?? []
     : [];
 
+  const isBlank = !campaign.market && !campaign.product_category && campaign.budget === 0 && campaign.ads.length === 0;
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <details className="rounded-md border border-ink-200">
+        <summary className="cursor-pointer px-4 py-2 text-sm font-semibold text-ink-600">📥 Import from Briefing Sheet</summary>
+        <div className="border-t border-ink-200 p-4">
+          <BriefingImportPanel
+            platform="google"
+            onDone={(lastCampaignId) => {
+              if (isBlank && lastCampaignId !== campaignId) removeCampaign(campaignId);
+              setSelected({ type: 'campaign', campaignId: lastCampaignId });
+            }}
+          />
+        </div>
+      </details>
+
       <div>
-        <h2 className="text-lg font-bold text-[#1F3864]">Campaign</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          Campaign name: <span className="font-mono text-zinc-700">{campaign.campaign_name || '—'}</span>
+        <h2 className="text-2xl font-extrabold tracking-tight text-ink-900">Campaign</h2>
+        <p className="mt-1 text-sm text-ink-500">
+          Campaign name: <span className="font-mono text-ink-700">{campaign.campaign_name || '—'}</span>
         </p>
-        <p className="text-sm text-zinc-500">
-          Ad group name: <span className="font-mono text-zinc-700">{campaign.adset_name || '—'}</span>
+        <p className="text-sm text-ink-500">
+          Ad group name: <span className="font-mono text-ink-700">{campaign.adset_name || '—'}</span>
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Channel">
           <Select value={campaign.channel} onChange={(e) => patch({ channel: e.target.value })}>
+            <option value="">—</option>
             {CHANNELS.map((c) => <option key={c}>{c}</option>)}
           </Select>
         </Field>
         <Field label="Main goal">
           <Select value={campaign.main_goal} onChange={(e) => patch({ main_goal: e.target.value })}>
+            <option value="">—</option>
             {MAIN_GOALS.map((g) => <option key={g}>{g}</option>)}
           </Select>
         </Field>
         <Field label="Performance goal">
           <Select value={campaign.perf_goal} onChange={(e) => patch({ perf_goal: e.target.value })}>
+            <option value="">—</option>
             {PERF_GOALS.map((g) => <option key={g}>{g}</option>)}
           </Select>
         </Field>
@@ -155,7 +177,7 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
                       : [...campaign.countries, code],
                   })
                 }
-                className={`rounded-full px-2.5 py-1 text-xs font-medium ${active ? 'bg-teal-500 text-white' : 'bg-zinc-100 text-zinc-500'}`}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${active ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-500'}`}
               >
                 {code}
               </button>
@@ -165,17 +187,17 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
       </Field>
 
       <Field label="Location targeting level" hint="Whether the country targeting applies to the whole campaign or just this ad group">
-        <div className="flex rounded-md bg-zinc-100 p-1 text-sm font-medium w-fit">
+        <div className="flex rounded-md bg-ink-100 p-1 text-sm font-medium w-fit">
           <button
             type="button"
-            className={`rounded-md px-3 py-1 transition ${campaign.location_level === 'campaign' ? 'bg-white text-[#1F3864] shadow' : 'text-zinc-500'}`}
+            className={`rounded-md px-3 py-1 transition ${campaign.location_level === 'campaign' ? 'bg-white text-ink-900 shadow' : 'text-ink-500'}`}
             onClick={() => patch({ location_level: 'campaign' })}
           >
             Campaign level
           </button>
           <button
             type="button"
-            className={`rounded-md px-3 py-1 transition ${campaign.location_level === 'adgroup' ? 'bg-white text-[#1F3864] shadow' : 'text-zinc-500'}`}
+            className={`rounded-md px-3 py-1 transition ${campaign.location_level === 'adgroup' ? 'bg-white text-ink-900 shadow' : 'text-ink-500'}`}
             onClick={() => patch({ location_level: 'adgroup' })}
           >
             Ad group level
@@ -183,14 +205,45 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
         </div>
       </Field>
 
-      <h3 className="text-sm font-semibold text-zinc-600">Editor settings</h3>
+      <h3 className="text-sm font-semibold text-ink-600">Editor settings</h3>
+
+      <Field label="Networks">
+        <MultiToggle
+          options={NETWORK_OPTIONS}
+          values={campaign.networks ? campaign.networks.split(';').filter(Boolean) : []}
+          onChange={(v) => patch({ networks: v.join(';') })}
+        />
+      </Field>
+
+      <Field label="Languages" hint="Pick 'All' or specific languages — use the shortcut to add languages for the countries selected above">
+        <MultiToggle
+          options={LANGUAGE_OPTIONS}
+          values={campaign.languages ? campaign.languages.split(',').map((s) => s.trim()).filter(Boolean) : []}
+          onChange={(v) => {
+            // "All" is exclusive — picking it clears everything else, and picking
+            // anything else while "All" is active drops "All".
+            if (v.includes('All') && v.length > 1) {
+              patch({ languages: v.filter((l) => l !== 'All').join(',') });
+            } else {
+              patch({ languages: v.join(',') });
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="mt-1 w-fit text-xs font-semibold text-brand-600 hover:underline"
+          onClick={() => {
+            const fromCountries = Array.from(new Set(campaign.countries.flatMap((c) => COUNTRY_LANGUAGE_MAP[c] ?? [])));
+            const current = campaign.languages ? campaign.languages.split(',').map((s) => s.trim()).filter(Boolean) : [];
+            const merged = Array.from(new Set([...current.filter((l) => l !== 'All'), ...fromCountries]));
+            patch({ languages: merged.join(',') });
+          }}
+        >
+          + Add languages for selected countries
+        </button>
+      </Field>
+
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Networks" hint="Semicolon-separated, exactly as the Editor expects">
-          <TextInput value={campaign.networks} onChange={(e) => patch({ networks: e.target.value })} />
-        </Field>
-        <Field label="Languages">
-          <TextInput value={campaign.languages} onChange={(e) => patch({ languages: e.target.value })} />
-        </Field>
         <Field label="Labels" hint="Leave blank to auto-generate from month + year">
           <TextInput value={campaign.labels} onChange={(e) => patch({ labels: e.target.value })} placeholder={campaign.month && campaign.end_date ? undefined : 'e.g. JUN;2026'} />
         </Field>
@@ -218,6 +271,16 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
             {CTAS.map((c) => <option key={c}>{c}</option>)}
           </Select>
         </Field>
+      </div>
+
+      <div className="flex justify-end border-t border-ink-200 pt-4">
+        <button
+          type="button"
+          className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          onClick={() => setSelected({ type: 'new_ad', campaignId })}
+        >
+          Next: Add ad →
+        </button>
       </div>
     </div>
   );
