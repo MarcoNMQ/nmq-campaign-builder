@@ -11,6 +11,16 @@ export interface GoogleAd {
   headline_3: string;
   headline_4: string;
   headline_5: string;
+  headline_6: string;
+  headline_7: string;
+  headline_8: string;
+  headline_9: string;
+  headline_10: string;
+  headline_11: string;
+  headline_12: string;
+  headline_13: string;
+  headline_14: string;
+  headline_15: string;
   long_headline_1: string;
   long_headline_2: string;
   long_headline_3: string;

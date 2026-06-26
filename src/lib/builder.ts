@@ -122,6 +122,16 @@ function buildAdRow(c: GoogleCampaign, ad: GoogleAd): CsvRow {
   row['Headline 3'] = ad.headline_3 ?? '';
   row['Headline 4'] = ad.headline_4 ?? '';
   row['Headline 5'] = ad.headline_5 ?? '';
+  row['Headline 6'] = ad.headline_6 ?? '';
+  row['Headline 7'] = ad.headline_7 ?? '';
+  row['Headline 8'] = ad.headline_8 ?? '';
+  row['Headline 9'] = ad.headline_9 ?? '';
+  row['Headline 10'] = ad.headline_10 ?? '';
+  row['Headline 11'] = ad.headline_11 ?? '';
+  row['Headline 12'] = ad.headline_12 ?? '';
+  row['Headline 13'] = ad.headline_13 ?? '';
+  row['Headline 14'] = ad.headline_14 ?? '';
+  row['Headline 15'] = ad.headline_15 ?? '';
   row['Long headline 1'] = ad.long_headline_1 ?? '';
   row['Long headline 2'] = ad.long_headline_2 ?? '';
   row['Long headline 3'] = ad.long_headline_3 ?? '';
@@ -191,9 +201,11 @@ export function validateCampaigns(campaigns: GoogleCampaign[]): string[] {
 
     (c.ads ?? []).forEach((ad, j) => {
       const adLabel = `${label} › Ad ${j + 1}`;
-      for (let k = 1; k <= 5; k++) {
+      for (let k = 1; k <= 15; k++) {
         const h = (ad as unknown as Record<string, string>)[`headline_${k}`] ?? '';
         if (h && h.length > 30) errors.push(`${adLabel} › Headline ${k} is ${h.length} chars (max 30).`);
+      }
+      for (let k = 1; k <= 5; k++) {
         const lh = (ad as unknown as Record<string, string>)[`long_headline_${k}`] ?? '';
         if (lh && lh.length > 90) errors.push(`${adLabel} › Long Headline ${k} is ${lh.length} chars (max 90).`);
         const d = (ad as unknown as Record<string, string>)[`description_${k}`] ?? '';

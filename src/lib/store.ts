@@ -12,6 +12,8 @@ export function newGoogleAd(): GoogleAd {
     ad_name: '',
     video_id: '',
     headline_1: '', headline_2: '', headline_3: '', headline_4: '', headline_5: '',
+    headline_6: '', headline_7: '', headline_8: '', headline_9: '', headline_10: '',
+    headline_11: '', headline_12: '', headline_13: '', headline_14: '', headline_15: '',
     long_headline_1: '', long_headline_2: '', long_headline_3: '', long_headline_4: '', long_headline_5: '',
     description_1: '', description_2: '', description_3: '', description_4: '', description_5: '',
     cta: '',

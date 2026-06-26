@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         input_schema: {
           type: 'object',
           properties: {
-            headlines: { type: 'array', items: { type: 'string' }, minItems: 5, maxItems: 5, description: 'Max 30 characters each' },
+            headlines: { type: 'array', items: { type: 'string' }, minItems: 15, maxItems: 15, description: 'Max 30 characters each' },
             longHeadlines: { type: 'array', items: { type: 'string' }, minItems: 5, maxItems: 5, description: 'Max 90 characters each' },
             descriptions: { type: 'array', items: { type: 'string' }, minItems: 5, maxItems: 5, description: 'Max 90 characters each' },
           },
@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
     messages: [
       {
         role: 'user',
-        content: `Write Google Demand Gen video ad copy for Shimano Fishing.
+        content: `Write Google Demand Gen video ad copy.
 Video title: "${videoTitle}"
-Product category: ${productCategory || 'general fishing gear'}
+Product category: ${productCategory || 'n/a'}
 Product promoted: ${productPromoted || 'n/a'}
 
-Generate exactly 5 headlines (max 30 chars), 5 long headlines (max 90 chars), and 5 descriptions (max 90 chars). Keep tone direct and benefit-led, appropriate for anglers.`,
+Generate exactly 15 headlines (max 30 chars), 5 long headlines (max 90 chars), and 5 descriptions (max 90 chars). Keep tone direct and benefit-led.`,
       },
     ],
   });

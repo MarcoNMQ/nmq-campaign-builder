@@ -56,6 +56,8 @@ export const CSV_HEADERS = [
   'Location',
   'Ad type', 'Ad Name', 'Video ID 1',
   'Headline 1', 'Headline 2', 'Headline 3', 'Headline 4', 'Headline 5',
+  'Headline 6', 'Headline 7', 'Headline 8', 'Headline 9', 'Headline 10',
+  'Headline 11', 'Headline 12', 'Headline 13', 'Headline 14', 'Headline 15',
   'Long headline 1', 'Long headline 2', 'Long headline 3', 'Long headline 4', 'Long headline 5',
   'Description 1', 'Description 2', 'Description 3', 'Description 4', 'Description 5',
   'Business name', 'Logo image', 'Call to action', 'Final URL', 'Status',

@@ -206,7 +206,12 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
                     updateGoogleAd(id, adId, {
                       headline_1: copy.headlines?.[0] ?? '', headline_2: copy.headlines?.[1] ?? '',
                       headline_3: copy.headlines?.[2] ?? '', headline_4: copy.headlines?.[3] ?? '',
-                      headline_5: copy.headlines?.[4] ?? '',
+                      headline_5: copy.headlines?.[4] ?? '', headline_6: copy.headlines?.[5] ?? '',
+                      headline_7: copy.headlines?.[6] ?? '', headline_8: copy.headlines?.[7] ?? '',
+                      headline_9: copy.headlines?.[8] ?? '', headline_10: copy.headlines?.[9] ?? '',
+                      headline_11: copy.headlines?.[10] ?? '', headline_12: copy.headlines?.[11] ?? '',
+                      headline_13: copy.headlines?.[12] ?? '', headline_14: copy.headlines?.[13] ?? '',
+                      headline_15: copy.headlines?.[14] ?? '',
                       long_headline_1: copy.longHeadlines?.[0] ?? '', long_headline_2: copy.longHeadlines?.[1] ?? '',
                       long_headline_3: copy.longHeadlines?.[2] ?? '', long_headline_4: copy.longHeadlines?.[3] ?? '',
                       long_headline_5: copy.longHeadlines?.[4] ?? '',
