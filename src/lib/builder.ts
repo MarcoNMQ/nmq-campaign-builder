@@ -9,6 +9,7 @@ import { generateName } from './naming/generateName';
 import { getConventionForClient } from './naming/templates';
 import { shimanoCampaignFormula, shimanoAdGroupFormula } from './naming/shimano';
 import { defaultCampaignFormula, defaultAdGroupFormula } from './naming/generic';
+import { resolveDuplicateNames } from './naming/dedupe';
 import type { GoogleAd, GoogleCampaign } from './types';
 
 // Naming logic now lives in src/lib/naming/ (see that folder for the
@@ -142,15 +143,30 @@ function csvEscape(value: string): string {
  * Then all ad rows at the end (grouped by campaign).
  */
 export function buildCsv(campaigns: GoogleCampaign[]): string {
+  // Resolve any campaign/ad-group name collisions across the full set
+  // before building rows — see naming/dedupe.ts. This only ever appends a
+  // numeric suffix to an already-generated base name; it never changes the
+  // base naming convention itself.
+  const resolved = resolveDuplicateNames(
+    campaigns.map((c) => ({ id: c.id, campaignName: c.campaign_name, adsetName: c.adset_name })),
+  );
+  const resolvedById = new Map(resolved.map((r) => [r.id, r]));
+
   const allRows: CsvRow[] = [];
   const adRows: CsvRow[] = [];
 
   for (const c of campaigns) {
-    allRows.push(buildCampaignRow(c));
-    allRows.push(buildAdgroupRow(c));
-    allRows.push(...buildLocationRows(c));
-    for (const ad of c.ads ?? []) {
-      adRows.push(buildAdRow(c, ad));
+    const names = resolvedById.get(c.id);
+    // Every row for this entity — campaign, ad group, locations, and all
+    // its ads — uses the same resolved names, so they stay linked together.
+    const cResolved: GoogleCampaign = names
+      ? { ...c, campaign_name: names.campaignName, adset_name: names.adsetName }
+      : c;
+    allRows.push(buildCampaignRow(cResolved));
+    allRows.push(buildAdgroupRow(cResolved));
+    allRows.push(...buildLocationRows(cResolved));
+    for (const ad of cResolved.ads ?? []) {
+      adRows.push(buildAdRow(cResolved, ad));
     }
   }
 
