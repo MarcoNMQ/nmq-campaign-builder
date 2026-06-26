@@ -7,7 +7,7 @@ import {
   CHANNELS, MAIN_GOALS, PERF_GOALS,
   MARKETS, MONTHS, CTAS, BID_STRATEGIES, COUNTRY_OPTIONS, MARKET_TO_GROUP,
   COUNTRY_GROUP_PRESETS, COUNTRY_GROUPS, NETWORK_OPTIONS, LANGUAGE_OPTIONS,
-  COUNTRY_LANGUAGE_MAP,
+  COUNTRY_LANGUAGE_MAP, CLIENT_PROFILES, CLIENT_TAXONOMIES,
 } from '@/lib/constants';
 import { Field, MultiToggle, Select, TextInput } from '@/components/Field';
 import { BriefingImportPanel } from '@/components/BriefingImportPanel';
@@ -48,6 +48,13 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
   }
 
   const isBlank = !campaign.market && !campaign.product_category && campaign.budget === 0 && campaign.ads.length === 0;
+  const clientTaxonomy = CLIENT_TAXONOMIES[campaign.client_profile];
+  const families = clientTaxonomy && campaign.product_category
+    ? Object.keys(clientTaxonomy.taxonomy[campaign.product_category] ?? {})
+    : [];
+  const products = clientTaxonomy && campaign.product_subcategory
+    ? clientTaxonomy.taxonomy[campaign.product_category]?.[campaign.product_subcategory] ?? []
+    : [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -101,16 +108,65 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
         </Field>
       </div>
 
+      <Field
+        label="For which client are you setting up the campaign?"
+        hint="Leave blank for free-text product fields. Picking a known client switches Product category/family/promoted to that client's fixed naming convention."
+      >
+        <Select
+          value={campaign.client_profile}
+          onChange={(e) => patch({ client_profile: e.target.value, product_category: '', product_subcategory: '', product_promoted: '' })}
+        >
+          <option value="">— None —</option>
+          {CLIENT_PROFILES.map((c) => <option key={c}>{c}</option>)}
+        </Select>
+      </Field>
+
       <div className="grid grid-cols-3 gap-4">
-        <Field label="Product category" tooltip="Free text — your own product taxonomy. Feeds the auto-generated campaign and ad group names.">
-          <TextInput value={campaign.product_category} onChange={(e) => patch({ product_category: e.target.value })} placeholder="e.g. Running shoes" />
-        </Field>
-        <Field label="Product family">
-          <TextInput value={campaign.product_subcategory} onChange={(e) => patch({ product_subcategory: e.target.value })} placeholder="e.g. Trail" />
-        </Field>
-        <Field label="Product promoted">
-          <TextInput value={campaign.product_promoted} onChange={(e) => patch({ product_promoted: e.target.value })} placeholder="e.g. Trail Runner X2" />
-        </Field>
+        {clientTaxonomy ? (
+          <>
+            <Field label="Product category" tooltip={`${campaign.client_profile}'s top-level catalogue grouping. Narrows the Product family list below.`}>
+              <Select
+                value={campaign.product_category}
+                onChange={(e) => patch({ product_category: e.target.value, product_subcategory: '', product_promoted: '' })}
+              >
+                <option value="">—</option>
+                {clientTaxonomy.categories.map((c) => <option key={c}>{c}</option>)}
+              </Select>
+            </Field>
+            <Field label="Product family">
+              <Select
+                value={campaign.product_subcategory}
+                onChange={(e) => patch({ product_subcategory: e.target.value, product_promoted: '' })}
+                disabled={!families.length}
+              >
+                <option value="">—</option>
+                {families.map((f) => <option key={f}>{f}</option>)}
+              </Select>
+            </Field>
+            <Field label="Product promoted">
+              <Select
+                value={campaign.product_promoted}
+                onChange={(e) => patch({ product_promoted: e.target.value })}
+                disabled={!products.length}
+              >
+                <option value="">—</option>
+                {products.map((p) => <option key={p}>{p}</option>)}
+              </Select>
+            </Field>
+          </>
+        ) : (
+          <>
+            <Field label="Product category" tooltip="Free text — your own product taxonomy. Feeds the auto-generated campaign and ad group names.">
+              <TextInput value={campaign.product_category} onChange={(e) => patch({ product_category: e.target.value })} placeholder="e.g. Running shoes" />
+            </Field>
+            <Field label="Product family">
+              <TextInput value={campaign.product_subcategory} onChange={(e) => patch({ product_subcategory: e.target.value })} placeholder="e.g. Trail" />
+            </Field>
+            <Field label="Product promoted">
+              <TextInput value={campaign.product_promoted} onChange={(e) => patch({ product_promoted: e.target.value })} placeholder="e.g. Trail Runner X2" />
+            </Field>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">

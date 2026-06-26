@@ -28,6 +28,7 @@ export function mapBriefingRowToGoogleCampaign(r: BriefingRow): Partial<GoogleCa
     channel: 'YouTube',
     main_goal: mainGoal,
     perf_goal: perfGoal,
+    client_profile: 'Shimano',
     product_category: r.category,
     product_subcategory: r.subcategory,
     product_promoted: r.product,

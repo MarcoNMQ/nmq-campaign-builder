@@ -29,6 +29,6 @@ export async function POST(req: NextRequest) {
   }
 
   const rawRows = parseCsv(text);
-  const { rows, debug } = parseBriefingRawToRows(rawRows, channelCodes);
-  return NextResponse.json({ rows, error: null, debug });
+  const { rows, debug, headers, dicts, columnMap } = parseBriefingRawToRows(rawRows, channelCodes);
+  return NextResponse.json({ rows, error: null, debug, headers, dicts, columnMap });
 }

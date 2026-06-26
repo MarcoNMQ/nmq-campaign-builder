@@ -33,6 +33,10 @@ export interface GoogleCampaign {
   main_goal: string;
   perf_goal: string;
   month: string;
+  // Empty string = generic free-text product fields. A known client name
+  // (e.g. "Shimano") switches Product category/family/promoted to that
+  // client's fixed taxonomy dropdowns instead — see CLIENT_TAXONOMIES.
+  client_profile: string;
   product_category: string;
   product_subcategory: string;
   product_promoted: string;

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useBuilderStore } from '@/lib/store';
 import { mapBriefingRowToFbCampaign, mapBriefingRowToGoogleCampaign } from '@/lib/briefingMap';
-import type { BriefingRow } from '@/lib/briefing';
+import { BRIEFING_FIELDS, DEFAULT_CHANNEL_CODES, buildRowsFromMap, type BriefingRow, type ColumnMap } from '@/lib/briefing';
 import type { Platform } from '@/lib/types';
 import { TextInput } from '@/components/Field';
 
@@ -27,6 +27,14 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
   const [debug, setDebug] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
+  // Raw column data kept around so the user can manually remap columns if
+  // auto-detection doesn't match the sheet (e.g. a non-Shimano briefing).
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [dicts, setDicts] = useState<Record<string, string>[]>([]);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualMap, setManualMap] = useState<ColumnMap>({});
+  const [skipChannelFilter, setSkipChannelFilter] = useState(false);
+
   async function handleUrlBlur() {
     if (!url) return;
     try {
@@ -48,6 +56,10 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
         body: JSON.stringify({ url, gid: selectedGid, channel: platform }),
       });
       const data = await res.json();
+      setHeaders(data.headers ?? []);
+      setDicts(data.dicts ?? []);
+      setManualMap(data.columnMap ?? {});
+      setManualMode(false);
       if (data.error) setError(data.error);
       else if (!data.rows?.length) {
         setError('No matching rows found on this tab.');
@@ -73,6 +85,10 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
         body: JSON.stringify({ url, channel: platform }),
       });
       const data = await res.json();
+      setHeaders(data.headers ?? []);
+      setDicts(data.dicts ?? []);
+      setManualMap(data.columnMap ?? {});
+      setManualMode(false);
       if (data.error) setError(data.error);
       else if (!data.rows?.length) {
         setError('No matching rows found across all tabs.');
@@ -97,6 +113,10 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
       form.append('channel', platform);
       const res = await fetch('/api/briefing/parse-file', { method: 'POST', body: form });
       const data = await res.json();
+      setHeaders(data.headers ?? []);
+      setDicts(data.dicts ?? []);
+      setManualMap(data.columnMap ?? {});
+      setManualMode(false);
       if (data.error) setError(data.error);
       else if (!data.rows?.length) {
         setError('No matching rows found in this file.');
@@ -110,6 +130,15 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
     } finally {
       setLoading(null);
     }
+  }
+
+  function applyManualMapping() {
+    const channelCodes = skipChannelFilter ? null : new Set(DEFAULT_CHANNEL_CODES[platform] ?? DEFAULT_CHANNEL_CODES.facebook);
+    const { rows: newRows, debug: newDebug } = buildRowsFromMap(dicts, manualMap, channelCodes);
+    setRows(newRows);
+    setSelectedIdxs(new Set());
+    setDebug(newDebug);
+    setError(newRows.length === 0 ? 'No rows matched this mapping — check the channel filter or column choices.' : null);
   }
 
   function toggleRow(i: number) {
@@ -265,6 +294,52 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       {debug && <p className="mt-1 text-xs text-ink-400">{debug}</p>}
+
+      {headers.length > 0 && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setManualMode((v) => !v)}
+            className="text-xs font-semibold text-brand-600 hover:underline"
+          >
+            {manualMode ? 'Hide column mapping' : "Columns don't look right? Map them manually"}
+          </button>
+
+          {manualMode && (
+            <div className="mt-2 space-y-2 rounded-md border border-ink-200 bg-white p-3">
+              <p className="text-xs text-ink-500">
+                Match each field below to a column from your sheet. Leave as &ldquo;(none)&rdquo; to skip a field.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {BRIEFING_FIELDS.map((f) => (
+                  <label key={f.key} className="flex flex-col gap-0.5 text-xs">
+                    <span className="font-semibold text-ink-700">{f.label}</span>
+                    <select
+                      className="rounded-md border border-ink-200 px-2 py-1 text-xs"
+                      value={manualMap[f.key] ?? ''}
+                      onChange={(e) => setManualMap((m) => ({ ...m, [f.key]: e.target.value || undefined }))}
+                    >
+                      <option value="">(none)</option>
+                      {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-xs text-ink-600">
+                <input type="checkbox" checked={skipChannelFilter} onChange={(e) => setSkipChannelFilter(e.target.checked)} />
+                This sheet has no channel column — import all rows for this platform
+              </label>
+              <button
+                type="button"
+                onClick={applyManualMapping}
+                className="w-full rounded-md bg-ink-900 py-1.5 text-xs font-bold text-white"
+              >
+                Apply mapping
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {rows.length > 0 && (
         <div className="mt-4">

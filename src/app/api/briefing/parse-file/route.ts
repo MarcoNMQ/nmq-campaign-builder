@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
       const text = await file.text();
       rawRows = parseCsv(text);
     }
-    const { rows, debug } = parseBriefingRawToRows(rawRows, channelCodes);
-    return NextResponse.json({ rows, error: null, debug });
+    const { rows, debug, headers, dicts, columnMap } = parseBriefingRawToRows(rawRows, channelCodes);
+    return NextResponse.json({ rows, error: null, debug, headers, dicts, columnMap });
   } catch (e) {
     return NextResponse.json({ rows: [], error: `Could not read file: ${e}`, debug: '' });
   }

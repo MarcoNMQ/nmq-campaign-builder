@@ -28,6 +28,7 @@ export function newGoogleCampaign(): GoogleCampaign {
     main_goal: '',
     perf_goal: '',
     month: '',
+    client_profile: '',
     product_category: '',
     product_subcategory: '',
     product_promoted: '',

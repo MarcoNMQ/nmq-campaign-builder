@@ -47,6 +47,14 @@ export async function POST(req: NextRequest) {
     await wb.xlsx.load(Buffer.from(buffer) as unknown as ExcelJS.Buffer);
     const allRows: BriefingRow[] = [];
     const debugParts: string[] = [];
+    // For the manual column-mapping UI, we can only represent one sheet's
+    // column structure at a time — use whichever tab produced the most
+    // data rows as the representative one (most briefing workbooks repeat
+    // the same column layout across tabs anyway).
+    let bestHeaders: string[] = [];
+    let bestDicts: Record<string, string>[] = [];
+    let bestColumnMap: Record<string, string> = {};
+    let bestCount = -1;
 
     for (const ws of wb.worksheets) {
       if (['lists', 'sheet1'].includes(ws.name.toLowerCase())) continue;
@@ -58,10 +66,16 @@ export async function POST(req: NextRequest) {
         });
         raw.push(cells);
       });
-      const { rows, debug } = parseBriefingRawToRows(raw, channelCodes);
+      const { rows, debug, headers, dicts, columnMap } = parseBriefingRawToRows(raw, channelCodes);
       if (rows.length) {
         allRows.push(...rows);
         debugParts.push(`${ws.name}: ${rows.length} rows (${debug})`);
+      }
+      if (dicts.length > bestCount) {
+        bestCount = dicts.length;
+        bestHeaders = headers;
+        bestDicts = dicts;
+        bestColumnMap = columnMap;
       }
     }
 
@@ -70,12 +84,18 @@ export async function POST(req: NextRequest) {
         rows: [],
         error: null,
         debug: `Scanned ${wb.worksheets.length} tab(s), no matching rows. Tabs: ${wb.worksheets.map((w) => w.name).join(', ')}`,
+        headers: bestHeaders,
+        dicts: bestDicts,
+        columnMap: bestColumnMap,
       });
     }
     return NextResponse.json({
       rows: allRows,
       error: null,
       debug: `Scanned ${wb.worksheets.length} tabs → ${allRows.length} total rows | ${debugParts.join(', ')}`,
+      headers: bestHeaders,
+      dicts: bestDicts,
+      columnMap: bestColumnMap,
     });
   } catch (e) {
     return NextResponse.json({ rows: [], error: `Could not read workbook: ${e}`, debug: '' });

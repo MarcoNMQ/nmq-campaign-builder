@@ -26,6 +26,40 @@ export interface BriefingRow {
   channel_code: string;
 }
 
+// The set of fields the importer can fill in, and the column-name guesses it
+// tries for each one. Used both for auto-detection and to drive the manual
+// column-mapping UI when a briefing sheet doesn't follow Shimano's exact
+// column naming.
+export const BRIEFING_FIELDS: { key: keyof BriefingRow; label: string; guesses: string[] }[] = [
+  { key: 'channel_code', label: 'Channel', guesses: ['Channel_Code', 'Channel'] },
+  { key: 'campaign_name', label: 'Campaign name', guesses: ['CAMPAIGN NAME', 'Campaign Name'] },
+  { key: 'adset_name', label: 'Ad set name', guesses: ['AD SET NAME', 'Ad Set Name'] },
+  { key: 'creative_name', label: 'Creative name', guesses: ['CREATIVE NAME', 'Creative Name'] },
+  { key: 'goal_code', label: 'Performance goal', guesses: ['Performance_Goal'] },
+  { key: 'perf_code', label: 'Goal code', guesses: ['Goal_Code'] },
+  { key: 'category', label: 'Category', guesses: ['Category_Code'] },
+  { key: 'subcategory', label: 'Subcategory', guesses: ['SUbCategory_code', 'SubCategory_code'] },
+  { key: 'product', label: 'Product', guesses: ['Product_code'] },
+  { key: 'key_product', label: 'Key product code', guesses: ['Key_Product_code'] },
+  { key: 'market_code', label: 'Market code', guesses: ['Market_Code'] },
+  { key: 'country_code', label: 'Country code', guesses: ['Country_Code'] },
+  { key: 'creative_code', label: 'Creative code', guesses: ['Creative_Code'] },
+  { key: 'month', label: 'Month', guesses: ['Month'] },
+  { key: 'budget', label: 'Budget', guesses: ['Budget'] },
+  { key: 'final_url', label: 'CTA / Final URL', guesses: ['CTA'] },
+  { key: 'asset_link', label: 'Asset link (video URL)', guesses: ['Asset Link', 'Asset_Link'] },
+  { key: 'start_date', label: 'Start date', guesses: ['START DATE'] },
+  { key: 'end_date', label: 'End date', guesses: ['END DATE'] },
+  { key: 'shimano_comments', label: 'Comments (used for free-text country extraction)', guesses: ['SHIMANO COMMENTS', 'COMMENTS'] },
+];
+
+export type ColumnMap = Partial<Record<keyof BriefingRow, string>>;
+
+export const DEFAULT_CHANNEL_CODES: Record<'google' | 'facebook', string[]> = {
+  google: ['YT'],
+  facebook: ['FBIG', 'FB', 'IG'],
+};
+
 /** Minimal RFC4180 CSV parser — handles quoted fields, escaped quotes, and CRLF/LF. */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -122,93 +156,112 @@ function findCol(headers: string[], name: string): string | null {
   return headers.find((k) => k.trim().toLowerCase().includes(name.toLowerCase())) ?? null;
 }
 
-/** Core parser: raw rows (array of arrays of strings) → filtered clean briefing dicts. */
-export function parseBriefingRawToRows(
-  rawRows: string[][],
-  channelCodes: Set<string>,
-): { rows: BriefingRow[]; debug: string } {
-  if (!rawRows.length) return { rows: [], debug: 'Sheet appears to be empty.' };
-
-  let headerIdx = 0;
+/** Find which row in the sheet looks like the header row (first 10 rows scanned). */
+export function detectHeaderRow(rawRows: string[][]): number {
   for (let i = 0; i < Math.min(10, rawRows.length); i++) {
-    if (rawRows[i].some((c) => /channel|campaign/i.test(c ?? ''))) {
-      headerIdx = i;
-      break;
+    if (rawRows[i].some((c) => /channel|campaign/i.test(c ?? ''))) return i;
+  }
+  return 0;
+}
+
+/** Best-effort guess at which header matches each briefing field, for pre-filling the mapping UI. */
+export function autoDetectColumnMap(headers: string[]): ColumnMap {
+  const map: ColumnMap = {};
+  for (const field of BRIEFING_FIELDS) {
+    for (const guess of field.guesses) {
+      const found = findCol(headers, guess);
+      if (found) {
+        map[field.key] = found;
+        break;
+      }
     }
   }
+  return map;
+}
 
+/** Turn raw sheet rows into header-keyed dicts, given the header row index. */
+export function rowsToDicts(rawRows: string[][], headerIdx: number): { headers: string[]; dicts: Record<string, string>[] } {
   const headers = (rawRows[headerIdx] ?? []).map((h) => h ?? '');
   const dataRows = rawRows.slice(headerIdx + 1);
-  const allDicts: Record<string, string>[] = [];
+  const dicts: Record<string, string>[] = [];
   for (const row of dataRows) {
     if (!row.some((c) => (c ?? '').trim())) continue;
     const dict: Record<string, string> = {};
     headers.forEach((h, i) => {
       dict[h] = row[i] ?? '';
     });
-    allDicts.push(dict);
+    dicts.push(dict);
   }
+  return { headers, dicts };
+}
 
-  const colCh = findCol(headers, 'Channel_Code') ?? findCol(headers, 'Channel');
-  const colCamp = findCol(headers, 'CAMPAIGN NAME') ?? findCol(headers, 'Campaign Name');
-  const colAg = findCol(headers, 'AD SET NAME') ?? findCol(headers, 'Ad Set Name');
-  const colCrea = findCol(headers, 'CREATIVE NAME') ?? findCol(headers, 'Creative Name');
-  const colGoal = findCol(headers, 'Performance_Goal');
-  const colPerf = findCol(headers, 'Goal_Code');
-  const colCat = findCol(headers, 'Category_Code');
-  const colSub = findCol(headers, 'SUbCategory_code') ?? findCol(headers, 'SubCategory_code');
-  const colProd = findCol(headers, 'Product_code');
-  const colKp = findCol(headers, 'Key_Product_code');
-  const colMkt = findCol(headers, 'Market_Code');
-  const colCty = findCol(headers, 'Country_Code');
-  const colCrty = findCol(headers, 'Creative_Code');
-  const colMon = findCol(headers, 'Month');
-  const colBud = findCol(headers, 'Budget');
-  const colCta = findCol(headers, 'CTA');
-  const colLink = findCol(headers, 'Asset Link') ?? findCol(headers, 'Asset_Link');
-  const colSd = findCol(headers, 'START DATE');
-  const colEd = findCol(headers, 'END DATE');
-  const colComm = findCol(headers, 'SHIMANO COMMENTS');
+/**
+ * Build BriefingRow[] from header-keyed dicts using an explicit column map.
+ * If channelCodes is null, every row is included (no channel filtering) —
+ * used when the sheet has no channel column, e.g. a non-Shimano briefing.
+ */
+export function buildRowsFromMap(
+  dicts: Record<string, string>[],
+  map: ColumnMap,
+  channelCodes: Set<string> | null,
+): { rows: BriefingRow[]; debug: string } {
+  const v = (d: Record<string, string>, field: keyof BriefingRow) => {
+    const col = map[field];
+    return col ? (d[col] ?? '').trim() : '';
+  };
 
-  const v = (d: Record<string, string>, col: string | null) => (col ? (d[col] ?? '').trim() : '');
-
-  const chVals = colCh ? Array.from(new Set(allDicts.map((d) => v(d, colCh)).filter(Boolean))).sort() : [];
-  const debug = `Header row: ${headerIdx} | Rows: ${allDicts.length} | Channel_Code col: "${colCh}" | Channel values: ${chVals} | camp=${colCamp}, ag=${colAg}, goal=${colGoal}, mkt=${colMkt}`;
+  const chVals = map.channel_code
+    ? Array.from(new Set(dicts.map((d) => v(d, 'channel_code')).filter(Boolean))).sort()
+    : [];
+  const debug = `Rows: ${dicts.length} | Channel col: "${map.channel_code ?? '(none)'}" | Channel values: ${chVals}`;
 
   let lastCamp = '';
   let lastAg = '';
   const rows: BriefingRow[] = [];
-  for (const d of allDicts) {
-    const chCode = v(d, colCh).toUpperCase();
-    if (!channelCodes.has(chCode)) continue;
-    const campName = v(d, colCamp) || lastCamp;
-    const agName = v(d, colAg) || lastAg;
-    if (v(d, colCamp)) lastCamp = v(d, colCamp);
-    if (v(d, colAg)) lastAg = v(d, colAg);
+  for (const d of dicts) {
+    const chCode = v(d, 'channel_code').toUpperCase();
+    if (channelCodes && !channelCodes.has(chCode)) continue;
+    const campName = v(d, 'campaign_name') || lastCamp;
+    const agName = v(d, 'adset_name') || lastAg;
+    if (v(d, 'campaign_name')) lastCamp = v(d, 'campaign_name');
+    if (v(d, 'adset_name')) lastAg = v(d, 'adset_name');
     rows.push({
       campaign_name: campName,
       adset_name: agName,
-      creative_name: v(d, colCrea),
-      goal_code: v(d, colGoal),
-      perf_code: v(d, colPerf),
-      category: v(d, colCat),
-      subcategory: v(d, colSub),
-      product: v(d, colProd),
-      key_product: v(d, colKp),
-      market_code: v(d, colMkt),
-      country_code: v(d, colCty),
-      creative_code: v(d, colCrty),
-      month: v(d, colMon),
-      budget: v(d, colBud),
-      final_url: v(d, colCta),
-      asset_link: v(d, colLink),
-      start_date: v(d, colSd),
-      end_date: v(d, colEd),
-      shimano_comments: v(d, colComm),
+      creative_name: v(d, 'creative_name'),
+      goal_code: v(d, 'goal_code'),
+      perf_code: v(d, 'perf_code'),
+      category: v(d, 'category'),
+      subcategory: v(d, 'subcategory'),
+      product: v(d, 'product'),
+      key_product: v(d, 'key_product'),
+      market_code: v(d, 'market_code'),
+      country_code: v(d, 'country_code'),
+      creative_code: v(d, 'creative_code'),
+      month: v(d, 'month'),
+      budget: v(d, 'budget'),
+      final_url: v(d, 'final_url'),
+      asset_link: v(d, 'asset_link'),
+      start_date: v(d, 'start_date'),
+      end_date: v(d, 'end_date'),
+      shimano_comments: v(d, 'shimano_comments'),
       channel_code: chCode,
     });
   }
   return { rows, debug };
+}
+
+/** Auto-detect convenience wrapper: header row + column guesses + channel filter, all in one call. */
+export function parseBriefingRawToRows(
+  rawRows: string[][],
+  channelCodes: Set<string>,
+): { rows: BriefingRow[]; debug: string; headers: string[]; dicts: Record<string, string>[]; columnMap: ColumnMap } {
+  if (!rawRows.length) return { rows: [], debug: 'Sheet appears to be empty.', headers: [], dicts: [], columnMap: {} };
+  const headerIdx = detectHeaderRow(rawRows);
+  const { headers, dicts } = rowsToDicts(rawRows, headerIdx);
+  const columnMap = autoDetectColumnMap(headers);
+  const { rows, debug } = buildRowsFromMap(dicts, columnMap, channelCodes);
+  return { rows, debug, headers, dicts, columnMap };
 }
 
 // ── Code → field lookup tables ────────────────────────────────────────────────

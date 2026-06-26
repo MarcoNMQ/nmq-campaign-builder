@@ -283,6 +283,22 @@ export const PRODUCT_SUBCATEGORIES = Array.from(
   new Set(Object.values(PRODUCT_TAXONOMY).flatMap((families) => Object.keys(families))),
 ).sort();
 
+// ── Per-client product taxonomies ──────────────────────────────────────────────
+// "Client" here means a brand with its own fixed product naming convention
+// (so far just Shimano). Selecting a client in the campaign form swaps the
+// free-text Product category/family/promoted fields for that client's
+// dropdowns. Add a new entry here for any future client with the same need.
+export interface ClientTaxonomy {
+  categories: string[];
+  taxonomy: Record<string, Record<string, string[]>>;
+}
+
+export const CLIENT_TAXONOMIES: Record<string, ClientTaxonomy> = {
+  Shimano: { categories: PRODUCT_CATEGORIES, taxonomy: PRODUCT_TAXONOMY },
+};
+
+export const CLIENT_PROFILES = Object.keys(CLIENT_TAXONOMIES);
+
 export const MARKETS = ['SEU', 'SGF', 'SSPF', 'SIF', 'SFFT', 'SBXF', 'SEFH', 'SFTK', 'SNF', 'SUK', 'SPOF'];
 
 export const COUNTRY_GROUPS = [
