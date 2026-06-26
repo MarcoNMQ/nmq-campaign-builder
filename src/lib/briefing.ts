@@ -389,6 +389,20 @@ export function parseBriefingBudget(s: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** An Asset Link cell can hold one URL or several, one per line — multiple
+ *  links in the same row means multiple separate ads under the same ad set
+ *  ("ad diversification" in Shimano's briefing convention), not one ad per
+ *  row. Splits on newlines/commas and keeps only tokens that look like a
+ *  URL — the row may also have stray whitespace or blank lines from how
+ *  Sheets/Excel stores wrapped multi-line cells. */
+export function splitAssetLinks(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter((s) => /^https?:\/\//i.test(s));
+}
+
 /** Build campaign and ad set names from briefing code columns (exact naming convention).
  *  Delegates to the naming engine in src/lib/naming/ — see shimano.ts for the
  *  actual formulas and why the KC segment sits where it does. */

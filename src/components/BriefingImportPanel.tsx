@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { useBuilderStore } from '@/lib/store';
 import { mapBriefingRowToFbCampaign, mapBriefingRowToGoogleCampaign } from '@/lib/briefingMap';
-import { BRIEFING_FIELDS, DEFAULT_CHANNEL_CODES, buildRowsFromMap, type BriefingRow, type ColumnMap } from '@/lib/briefing';
+import {
+  BRIEFING_FIELDS, DEFAULT_CHANNEL_CODES, buildRowsFromMap, splitAssetLinks, type BriefingRow, type ColumnMap,
+} from '@/lib/briefing';
+import { FB_CTAS } from '@/lib/fbConstants';
 import type { Platform } from '@/lib/types';
 import { TextInput } from '@/components/Field';
 
@@ -14,6 +17,8 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
   const updateGoogleAd = useBuilderStore((s) => s.updateGoogleAd);
   const updateFbCampaign = useBuilderStore((s) => s.updateFbCampaign);
   const addFbCampaign = useBuilderStore((s) => s.addFbCampaign);
+  const addFbAd = useBuilderStore((s) => s.addFbAd);
+  const updateFbAd = useBuilderStore((s) => s.updateFbAd);
 
   const [mode, setMode] = useState<'url' | 'file'>('url');
   const [url, setUrl] = useState('');
@@ -230,6 +235,24 @@ export function BriefingImportPanel({ platform, onDone }: { platform: Platform; 
           const id = addFbCampaign();
           updateFbCampaign(id, mapBriefingRowToFbCampaign(r));
           lastId = id;
+
+          // Multiple Asset Links in one row = multiple separate ads under
+          // the same ad set ("ad diversification" in Shimano's briefing
+          // convention) — one ad per link, not one ad per row. The link
+          // itself goes in URL tags so it's carried through to the export
+          // (Ads Manager has no bulk-upload column for "boost this post by
+          // URL", but at least the link isn't lost) — Title/Body are left
+          // blank for manual entry, no AI guessing at copy we can't verify.
+          const links = splitAssetLinks(r.asset_link);
+          links.forEach((link, i) => {
+            const adId = addFbAd(id);
+            updateFbAd(id, adId, {
+              ad_name: r.creative_name || `Ad ${i + 1}`,
+              link: r.final_url,
+              url_tags: link,
+              cta: FB_CTAS[0],
+            });
+          });
         }
       }
     } finally {
