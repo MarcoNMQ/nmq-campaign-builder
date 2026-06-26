@@ -3,49 +3,28 @@
 import {
   CSV_HEADERS, NETWORKS, EU_POL, BIZ, LOGO,
   CAMP_TYPE, LANGUAGES, BUDGET_TYPE, CAMP_STATUS,
-  CHANNEL_CODES, MAIN_GOAL_CODES, PERF_GOAL_CODES, MONTH_CODES,
-  COUNTRY_MAP,
+  COUNTRY_MAP, MONTH_CODES,
 } from './constants';
+import { generateName } from './naming/generateName';
+import { getConventionForClient } from './naming/templates';
+import { shimanoCampaignFormula, shimanoAdGroupFormula } from './naming/shimano';
+import { defaultCampaignFormula, defaultAdGroupFormula } from './naming/generic';
 import type { GoogleAd, GoogleCampaign } from './types';
 
-/** Convert a YYYY-MM-DD string to dd.mm.yyyy for campaign names. */
-function fmtDate(dt: string | undefined | null): string {
-  if (!dt) return '';
-  const s = String(dt);
-  if (s.length === 10 && s[4] === '-') {
-    const [y, m, d] = s.split('-');
-    return `${d}.${m}.${y}`;
-  }
-  return s;
-}
-
+// Naming logic now lives in src/lib/naming/ (see that folder for the
+// formulas/engine). These wrappers keep the exact same exported names and
+// signatures so every existing call site (GoogleCampaignForm.tsx) needs no
+// changes — they just pick the right convention by client_profile.
 export function generateCampaignName(c: Partial<GoogleCampaign>): string {
-  const parts = [
-    CHANNEL_CODES[c.channel ?? ''] ?? '',
-    MAIN_GOAL_CODES[c.main_goal ?? ''] ?? '',
-    MONTH_CODES[c.month ?? ''] ?? '',
-    c.product_category ?? '',
-    c.key_category === 'YES' ? 'KC' : '',
-    fmtDate(c.start_date),
-    fmtDate(c.end_date),
-  ];
-  return parts.filter(Boolean).join('_');
+  const convention = getConventionForClient(c.client_profile ?? '');
+  const formula = convention.clientMode === 'shimano' ? shimanoCampaignFormula : defaultCampaignFormula;
+  return generateName(formula.resolve(c));
 }
 
 export function generateAdsetName(c: Partial<GoogleCampaign>): string {
-  const parts = [
-    CHANNEL_CODES[c.channel ?? ''] ?? '',
-    PERF_GOAL_CODES[c.perf_goal ?? ''] ?? '',
-    c.product_category ?? '',
-    c.product_subcategory && c.product_subcategory !== 'NA' ? c.product_subcategory : '',
-    c.product_promoted ?? '',
-    c.market ?? '',
-    c.key_category === 'YES' ? 'KC' : '',
-    (c.country_group ?? '').replace(/ /g, '_').replace(/\+/g, '').replace(/__/g, '_').replace(/^_+|_+$/g, ''),
-    fmtDate(c.start_date),
-    fmtDate(c.end_date),
-  ];
-  return parts.filter(Boolean).join('_');
+  const convention = getConventionForClient(c.client_profile ?? '');
+  const formula = convention.clientMode === 'shimano' ? shimanoAdGroupFormula : defaultAdGroupFormula;
+  return generateName(formula.resolve(c));
 }
 
 type CsvRow = Record<string, string>;

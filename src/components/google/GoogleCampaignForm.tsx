@@ -11,6 +11,7 @@ import {
 } from '@/lib/constants';
 import { Field, MultiToggle, Select, TextInput } from '@/components/Field';
 import { BriefingImportPanel } from '@/components/BriefingImportPanel';
+import { getConventionForClient } from '@/lib/naming/templates';
 import type { GoogleCampaign } from '@/lib/types';
 
 export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
@@ -55,6 +56,7 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
   const products = clientTaxonomy && campaign.product_subcategory
     ? clientTaxonomy.taxonomy[campaign.product_category]?.[campaign.product_subcategory] ?? []
     : [];
+  const convention = getConventionForClient(campaign.client_profile);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -78,6 +80,9 @@ export function GoogleCampaignForm({ campaignId }: { campaignId: string }) {
         </p>
         <p className="text-sm text-ink-500">
           Ad group name: <span className="font-mono text-ink-700">{campaign.adset_name || '—'}</span>
+        </p>
+        <p className="mt-1 text-xs font-medium text-ink-400">
+          Using: {convention.name}{convention.locked ? ' (locked)' : ''}
         </p>
       </div>
 

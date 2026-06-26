@@ -2,6 +2,8 @@
 // (Google Sheets / Excel / CSV briefing parsing, shared by Google and Facebook import flows)
 
 import { COUNTRY_GROUP_PRESETS, COUNTRY_OPTIONS, MARKET_TO_GROUP } from './constants';
+import { generateName } from './naming/generateName';
+import { shimanoBriefingCampaignFormula, shimanoBriefingAdGroupFormula } from './naming/shimano';
 
 export interface BriefingRow {
   campaign_name: string;
@@ -387,31 +389,12 @@ export function parseBriefingBudget(s: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function fmtNameDate(dateStr: string): string {
-  const parsed = parseBriefingDate(dateStr);
-  if (!parsed) return '';
-  const [y, m, d] = parsed.split('-');
-  return `${d}.${m}.${y}`;
-}
-
-/** Build campaign and ad set names from briefing code columns (exact naming convention). */
+/** Build campaign and ad set names from briefing code columns (exact naming convention).
+ *  Delegates to the naming engine in src/lib/naming/ — see shimano.ts for the
+ *  actual formulas and why the KC segment sits where it does. */
 export function buildYtNames(r: BriefingRow): { campaignName: string; adsetName: string } {
-  const ab = r.channel_code;
-  const ac = r.perf_code;
-  const ae = r.category;
-  const af = r.subcategory;
-  const ag = r.product;
-  let ah = r.key_product;
-  if (ah === '_') ah = '';
-  const ai = r.market_code;
-  const aj = r.country_code;
-  const sd = fmtNameDate(r.start_date);
-  const ed = fmtNameDate(r.end_date);
-
-  const campParts = [ab, ac, ae, af, ag, ai, aj, sd, ed].filter(Boolean);
-  if (ah === 'KC') campParts.push('KC');
-
-  const agParts = [ab, ac, ae, af, ag, ai, ah, aj, sd, ed].filter(Boolean);
-
-  return { campaignName: campParts.join('_'), adsetName: agParts.join('_') };
+  return {
+    campaignName: generateName(shimanoBriefingCampaignFormula.resolve(r)),
+    adsetName: generateName(shimanoBriefingAdGroupFormula.resolve(r)),
+  };
 }
