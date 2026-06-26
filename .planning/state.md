@@ -1,7 +1,9 @@
-# NMQ Campaign Builder — saved state (2026-06-26)
+# NMQ Campaign Builder — saved state (2026-06-26) — PAUSED here, picking up later
 
 ## Where things stand
-Live at `https://nmq-campaign-builder.vercel.app`, code at `github.com/MarcoNMQ/nmq-campaign-builder`. Last pushed commit: `a0b721b`. Everything described below is pushed and (should be) deployed — check Vercel dashboard for "Ready" status to confirm, since I (the assistant) can't see deployment status directly (my Vercel integration is tied to a different account than the one hosting this project — "NMQ Personal").
+Live at `https://nmq-campaign-builder.vercel.app`, code at `github.com/MarcoNMQ/nmq-campaign-builder`. Last pushed commit: `db53e18`. Everything described below is pushed and (should be) deployed — check Vercel dashboard for "Ready" status to confirm, since I (the assistant) can't see deployment status directly (my Vercel integration is tied to a different account than the one hosting this project — "NMQ Personal").
+
+Work explicitly paused here (2026-06-26) to switch focus to the Media Plan Generator. One late addition after the Search/Keywords/Sitelinks work: Facebook briefing import now splits multi-link Asset Link cells into one ad per link (same ad set), storing each link in the ad's "URL tags" field — deliberately no AI involved, kept simple per Marco's explicit request (an earlier attempt added a dedicated reference field + AI copy generation + a new API route; all of that was built, verified working, then fully reverted/removed when Marco said to simplify — don't reintroduce that complexity unless asked again).
 
 ## What this app is
 Web rebuild of the original Shimano-specific Streamlit campaign builder, generalized so any campaign manager can use it for any client, with Shimano's exact naming convention/taxonomy still available as a selectable option. Builds Google Ads (Demand Gen + Search) and Facebook/Instagram bulk-upload files. No database, no login — Zustand store persisted to `localStorage` (survives reload, doesn't sync across devices).
@@ -23,6 +25,8 @@ Next.js 16 (App Router) + TypeScript + Tailwind v4, Zustand (+ `persist` middlew
 11. **localStorage persistence** (`zustand/middleware persist`) — campaigns/ads/platform/selection survive a page reload. "Clear all data" button added to sidebar (with confirm).
 12. **Search ad support** — Channel = Search now shows genuinely different ad fields: no Video ID, Path 1/Path 2 added, Long Headlines hidden (not a Search concept), Descriptions capped at 4 (real RSA limit). CSV export writes `Ad type = "Responsive search ad"`, leaves Demand-Gen-only columns blank. Validation requires ≥3 headlines/≥2 descriptions instead of the Long Headline requirement.
 13. **Keywords + Sitelinks** (Search-only) — new types `GoogleKeyword`/`GoogleSitelink` on `GoogleCampaign`. Keywords: text + Broad/Phrase/Exact match type. Sitelinks: link text, two description lines, final URL (campaign-level, blank Ad group column). Both export as **separate CSVs** (`/api/export?exportType=keywords|sitelinks`) — matches how Google Ads Editor actually imports them (different bulk-upload screens than the main campaign/ad CSV).
+
+14. **Facebook multi-link briefing import** — a briefing row's Asset Link cell can hold several links (one per line, e.g. 6 Instagram posts), each meant to become a separate ad under the same ad set ("ad diversification" per Shimano's own sheet comments). `splitAssetLinks()` in `briefing.ts` splits on newline/comma, keeps URL-like tokens; one `FbAd` created per link, link stored in that ad's `url_tags` field (already-exported, no new field added). Kept deliberately simple — no AI copy generation, no dedicated reference field/banner.
 
 All Google Ads Editor CSV column names used throughout (Demand Gen, Search/RSA, Keywords, Sitelinks) were verified against Google's own Editor documentation via web search during this session — not guessed.
 
